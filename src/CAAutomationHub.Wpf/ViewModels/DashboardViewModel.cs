@@ -1,15 +1,19 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 using CAAutomationHub.Wpf.Adapters;
+using CAAutomationHub.Wpf.Models.Dashboard;
 
 namespace CAAutomationHub.Wpf.ViewModels;
 
-public sealed class DashboardViewModel : ViewModelBase
+public sealed class DashboardViewModel : ViewModelBase, IDisposable
 {
     private readonly IRuntimeDashboardAdapter _adapter;
+    private readonly DispatcherTimer _refreshTimer;
     private PlcStatusCardViewModel? _selectedPlc;
     private bool _isDetailPaneOpen;
+    private bool _isDisposed;
     private GridLength _detailPaneColumnWidth = new(0);
     private GridLength _detailPaneGapWidth = new(0);
 
@@ -21,7 +25,13 @@ public sealed class DashboardViewModel : ViewModelBase
         RefreshCommand = new RelayCommand(_ => LoadSnapshot());
         SelectPlcCommand = new RelayCommand(p => SelectPlc(p as PlcStatusCardViewModel));
         CloseDetailPaneCommand = new RelayCommand(_ => IsDetailPaneOpen = false);
+        _refreshTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        _refreshTimer.Tick += OnRefreshTimerTick;
         LoadSnapshot();
+        StartAutoRefresh();
     }
 
     public ObservableCollection<PlcStatusCardViewModel> PlcCards { get; } = new();
@@ -65,9 +75,32 @@ public sealed class DashboardViewModel : ViewModelBase
 
     private void LoadSnapshot()
     {
+        if (_isDisposed) return;
+
         var snapshot = _adapter.GetSnapshot();
-        PlcCards.Clear();
-        foreach (var card in snapshot.PlcCards) PlcCards.Add(new PlcStatusCardViewModel(card));
+        ApplySnapshot(snapshot);
+    }
+
+    private void ApplySnapshot(DashboardSnapshot snapshot)
+    {
+        foreach (var card in snapshot.PlcCards)
+        {
+            var existing = PlcCards.FirstOrDefault(plc => plc.Snapshot.PlcId == card.PlcId);
+            if (existing is null)
+            {
+                PlcCards.Add(new PlcStatusCardViewModel(card));
+                continue;
+            }
+
+            existing.UpdateSnapshot(card);
+        }
+
+        if (SelectedPlc is not null)
+        {
+            var selected = PlcCards.FirstOrDefault(plc => plc.Snapshot.PlcId == SelectedPlc.Snapshot.PlcId);
+            if (selected is not null && !ReferenceEquals(selected, SelectedPlc)) SelectedPlc = selected;
+        }
+
         TotalCount = snapshot.Health.TotalPlcs;
         HealthyCount = snapshot.Health.HealthyCount;
         WarningCount = snapshot.Health.WarningCount;
@@ -75,6 +108,28 @@ public sealed class DashboardViewModel : ViewModelBase
         ErrorCount = snapshot.Health.ErrorCount;
         OnCountsChanged();
     }
+
+    public void StartAutoRefresh()
+    {
+        if (_isDisposed || _refreshTimer.IsEnabled) return;
+        _refreshTimer.Start();
+    }
+
+    public void StopAutoRefresh()
+    {
+        if (_refreshTimer.IsEnabled) _refreshTimer.Stop();
+    }
+
+    public void Dispose()
+    {
+        if (_isDisposed) return;
+
+        _isDisposed = true;
+        StopAutoRefresh();
+        _refreshTimer.Tick -= OnRefreshTimerTick;
+    }
+
+    private void OnRefreshTimerTick(object? sender, EventArgs e) => LoadSnapshot();
 
     private void SelectPlc(PlcStatusCardViewModel? plc)
     {
