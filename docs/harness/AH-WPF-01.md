@@ -376,3 +376,97 @@ REJECT_AND_REPLAN
 
 Summary는 완료 증명이 아니라 리뷰 시작 자료다.
 Build 결과와 변경 파일을 반드시 포함해야 한다.
+
+---
+
+## AH-WPF-01 Closeout
+
+### 최종 판정
+
+```text
+최종 판정: ACCEPT
+
+검증 결과
+- Build 성공
+- Run 성공
+- Dashboard Shell 표시 성공
+- PLC Card List 표시 성공
+- Status Ring / Badge 표시 성공
+- Detail Pane 열기/닫기 성공
+- Detail Pane 닫힘 시 카드 영역 확장 성공
+- Summary Header / Card List / Trend Panel 우측 경계 정렬 성공
+- 횡 스크롤 표시 성공
+```
+
+### 완료 항목(고정 구조)
+
+```text
+- MainWindow
+- DashboardView
+- PlcStatusCard UserControl
+- PlcDetailPane UserControl
+- CommunicationTrendChart Placeholder
+- DashboardSnapshot DTO
+- PlcCardSnapshot DTO
+- RuntimeHealthSnapshot DTO
+- PlcConnectionState
+- RuntimeDashboardEvent Skeleton
+- IRuntimeDashboardAdapter
+- FakeDashboardRuntimeAdapter
+- DashboardViewModel
+- PlcStatusCardViewModel
+- PlcDetailPaneViewModel
+- Theme / ResourceDictionary 최소 구조
+```
+
+### Repair History
+
+```text
+Repair-01: Dashboard Visual Structure Alignment
+- 카드 밀도, Status Ring / Badge, Trend Placeholder, Detail Pane 구조 보정
+- 일부 레이아웃 이슈 발견
+
+Repair-02: Detail Pane Column Collapse Fix
+- Detail Pane 닫힘 시 컬럼 폭 0 처리
+- DetailPaneColumnWidth 추가
+
+Repair-03: Main Grid Layout Alignment
+- Detail Pane이 Card List + Trend 영역 전체 높이를 차지하도록 Grid.RowSpan=2 구조로 변경
+
+Repair-04: Dashboard Width Boundary Alignment
+- DetailPaneGapWidth 추가
+- Detail Pane 닫힘 시 gap도 0으로 축소
+- Summary Header / Card List / Trend Panel 경계 정렬 완료
+```
+
+### 유지 중인 경계 규칙
+
+```text
+- WPF UI는 FakePlc를 직접 참조하지 않는다.
+- WPF UI는 XgtDriverCore를 직접 참조하지 않는다.
+- WPF UI는 Runtime 내부 구현체를 직접 참조하지 않는다.
+- UI는 IRuntimeDashboardAdapter를 통해 DashboardSnapshot을 받는다.
+- FakeDashboardRuntimeAdapter는 정적 Snapshot만 반환한다.
+- 실제 PLC 통신은 아직 연결하지 않는다.
+```
+
+### 남은 리스크 / 미세 조정 후보
+
+```text
+- 카드 내부 텍스트 잘림 보정
+- PLC 이름 / 라인 이름 표시 폭 정리
+- Detail Pane 실제 데이터 밀도 개선
+- Trend Chart 실제 데이터 연결 전 Placeholder 개선
+- 창 크기 변경 / DPI별 레이아웃 확인
+- 색상 / 폰트 / 여백 세부 튜닝
+- 선택된 카드 하이라이트 개선
+```
+
+### 다음 시나리오 후보(권장 순서)
+
+```text
+1) AH-WPF-02: Fake Live Update Prototype
+2) AH-WPF-03: PlcEditorDialog Static Prototype
+3) AH-WPF-04: RealtimeEventLogPopup Static Prototype
+4) AH-WPF-05: RuntimeDashboardAdapter Skeleton
+```
