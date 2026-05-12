@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Input;
 using CAAutomationHub.Wpf.Adapters;
 
@@ -9,6 +10,7 @@ public sealed class DashboardViewModel : ViewModelBase
     private readonly IRuntimeDashboardAdapter _adapter;
     private PlcStatusCardViewModel? _selectedPlc;
     private bool _isDetailPaneOpen;
+    private GridLength _detailPaneColumnWidth = new(0);
 
     public DashboardViewModel() : this(new FakeDashboardRuntimeAdapter()) { }
 
@@ -40,7 +42,17 @@ public sealed class DashboardViewModel : ViewModelBase
     public bool IsDetailPaneOpen
     {
         get => _isDetailPaneOpen;
-        set => SetProperty(ref _isDetailPaneOpen, value);
+        set
+        {
+            if (!SetProperty(ref _isDetailPaneOpen, value)) return;
+            DetailPaneColumnWidth = value ? new GridLength(360) : new GridLength(0);
+        }
+    }
+
+    public GridLength DetailPaneColumnWidth
+    {
+        get => _detailPaneColumnWidth;
+        private set => SetProperty(ref _detailPaneColumnWidth, value);
     }
 
     private void LoadSnapshot()
