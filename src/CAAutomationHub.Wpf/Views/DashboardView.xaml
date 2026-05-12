@@ -52,7 +52,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="16"/>
-                <ColumnDefinition Width="360"/>
+                <ColumnDefinition Width="{Binding DetailPaneColumnWidth}"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}" Padding="10,8,10,10">
