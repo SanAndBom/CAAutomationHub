@@ -1,0 +1,19 @@
+<UserControl x:Class="CAAutomationHub.Wpf.Controls.PlcStatusCard"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Style="{StaticResource CardBorderStyle}" Width="260" Padding="12">
+        <StackPanel>
+            <TextBlock Text="{Binding PlcName}" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
+            <TextBlock Text="{Binding LineName}" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,8"/>
+            <TextBlock Text="{Binding Snapshot.ConnectionState}" Foreground="{StaticResource AccentBrush}"/>
+            <TextBlock Text="{Binding Snapshot.IpAddress, StringFormat=IP {0}}" Foreground="White"/>
+            <TextBlock Text="{Binding Snapshot.Port, StringFormat=Port {0}}" Foreground="White"/>
+            <TextBlock Text="{Binding Snapshot.PollingIntervalMs, StringFormat=Polling {0}ms}" Foreground="White"/>
+            <TextBlock Text="{Binding Snapshot.LastResponseMs, StringFormat=Last {0}ms}" Foreground="White"/>
+            <TextBlock Text="{Binding Snapshot.TxPerMinute, StringFormat=TX/min {0}}" Foreground="White"/>
+            <TextBlock Text="{Binding Snapshot.RxPerMinute, StringFormat=RX/min {0}}" Foreground="White"/>
+            <TextBlock Text="{Binding Snapshot.ErrorCount, StringFormat=Error {0}}" Foreground="Tomato"/>
+            <Border Margin="0,8,0,0" Height="36" Background="#222C3A" CornerRadius="4"><TextBlock Text="Mini Trend Placeholder" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/></Border>
+        </StackPanel>
+    </Border>
+</UserControl>
