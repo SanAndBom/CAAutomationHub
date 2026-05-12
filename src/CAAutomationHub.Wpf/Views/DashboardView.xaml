@@ -42,7 +42,7 @@
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Content="새로고침" Command="{Binding RefreshCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0"/>
-                    <Button Content="+ PLC 추가" Style="{StaticResource SecondaryButtonStyle}"/>
+                    <Button Content="+ PLC 추가" Click="OnAddPlcClick" Style="{StaticResource SecondaryButtonStyle}"/>
                 </StackPanel>
             </Grid>
         </Border>
