@@ -11,6 +11,7 @@ public sealed class DashboardViewModel : ViewModelBase
     private PlcStatusCardViewModel? _selectedPlc;
     private bool _isDetailPaneOpen;
     private GridLength _detailPaneColumnWidth = new(0);
+    private GridLength _detailPaneGapWidth = new(0);
 
     public DashboardViewModel() : this(new FakeDashboardRuntimeAdapter()) { }
 
@@ -46,6 +47,7 @@ public sealed class DashboardViewModel : ViewModelBase
         {
             if (!SetProperty(ref _isDetailPaneOpen, value)) return;
             DetailPaneColumnWidth = value ? new GridLength(360) : new GridLength(0);
+            DetailPaneGapWidth = value ? new GridLength(16) : new GridLength(0);
         }
     }
 
@@ -53,6 +55,12 @@ public sealed class DashboardViewModel : ViewModelBase
     {
         get => _detailPaneColumnWidth;
         private set => SetProperty(ref _detailPaneColumnWidth, value);
+    }
+
+    public GridLength DetailPaneGapWidth
+    {
+        get => _detailPaneGapWidth;
+        private set => SetProperty(ref _detailPaneGapWidth, value);
     }
 
     private void LoadSnapshot()
