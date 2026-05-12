@@ -22,26 +22,22 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Status" Foreground="{StaticResource TextMutedBrush}"/>
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Snapshot.ConnectionState}" Foreground="White"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ConnectionText}" Foreground="White"/>
 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="IP / Port" Foreground="{StaticResource TextMutedBrush}" Margin="0,8,0,0"/>
-                <TextBlock Grid.Row="1" Grid.Column="1" Foreground="White" Margin="0,8,0,0">
-                    <Run Text="{Binding Snapshot.IpAddress}"/><Run Text=":"/><Run Text="{Binding Snapshot.Port}"/>
-                </TextBlock>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding EndpointText}" Foreground="White" Margin="0,8,0,0"/>
 
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Polling" Foreground="{StaticResource TextMutedBrush}" Margin="0,8,0,0"/>
-                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Snapshot.PollingIntervalMs, StringFormat={}{0}ms}" Foreground="White" Margin="0,8,0,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding PollingIntervalText}" Foreground="White" Margin="0,8,0,0"/>
 
                 <TextBlock Grid.Row="3" Grid.Column="0" Text="Last Response" Foreground="{StaticResource TextMutedBrush}" Margin="0,8,0,0"/>
-                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Snapshot.LastResponseMs, StringFormat={}{0}ms}" Foreground="White" Margin="0,8,0,0"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding LastResponseText}" Foreground="White" Margin="0,8,0,0"/>
 
                 <TextBlock Grid.Row="4" Grid.Column="0" Text="TX / RX" Foreground="{StaticResource TextMutedBrush}" Margin="0,8,0,0"/>
-                <TextBlock Grid.Row="4" Grid.Column="1" Foreground="White" Margin="0,8,0,0">
-                    <Run Text="{Binding Snapshot.TxPerMinute}"/><Run Text=" / "/><Run Text="{Binding Snapshot.RxPerMinute}"/>
-                </TextBlock>
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding TxRxText}" Foreground="White" Margin="0,8,0,0"/>
 
                 <TextBlock Grid.Row="5" Grid.Column="0" Text="Error Count" Foreground="{StaticResource TextMutedBrush}" Margin="0,8,0,0"/>
-                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Snapshot.ErrorCount}" Foreground="White" Margin="0,8,0,0"/>
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ErrorCount}" Foreground="White" Margin="0,8,0,0"/>
             </Grid>
 
             <Border Background="#1A2638" CornerRadius="4" Padding="10">

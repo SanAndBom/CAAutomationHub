@@ -22,37 +22,39 @@
                         <Style TargetType="Ellipse">
                             <Setter Property="Stroke" Value="#4DA6FF"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding Snapshot.ConnectionState}" Value="Warning">
+                                <DataTrigger Binding="{Binding ConnectionState}" Value="Warning">
                                     <Setter Property="Stroke" Value="#FFD84E"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Snapshot.ConnectionState}" Value="Congested">
+                                <DataTrigger Binding="{Binding ConnectionState}" Value="Congested">
                                     <Setter Property="Stroke" Value="#FF9A2E"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Snapshot.ConnectionState}" Value="Error">
+                                <DataTrigger Binding="{Binding ConnectionState}" Value="Error">
                                     <Setter Property="Stroke" Value="#FF5555"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ConnectionState}" Value="Inactive">
+                                    <Setter Property="Stroke" Value="#7D8794"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </Ellipse.Style>
                 </Ellipse>
                 <Border HorizontalAlignment="Center" VerticalAlignment="Center" Padding="8,3" CornerRadius="9" Background="#1E2E45">
-                    <TextBlock FontWeight="SemiBold">
+                    <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
-                                <Setter Property="Text" Value="정상"/>
                                 <Setter Property="Foreground" Value="#5CC8FF"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Snapshot.ConnectionState}" Value="Warning">
-                                        <Setter Property="Text" Value="주의"/>
+                                    <DataTrigger Binding="{Binding ConnectionState}" Value="Warning">
                                         <Setter Property="Foreground" Value="#FFD84E"/>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Snapshot.ConnectionState}" Value="Congested">
-                                        <Setter Property="Text" Value="정체"/>
+                                    <DataTrigger Binding="{Binding ConnectionState}" Value="Congested">
                                         <Setter Property="Foreground" Value="#FF9A2E"/>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Snapshot.ConnectionState}" Value="Error">
-                                        <Setter Property="Text" Value="오류"/>
+                                    <DataTrigger Binding="{Binding ConnectionState}" Value="Error">
                                         <Setter Property="Foreground" Value="#FF5555"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding ConnectionState}" Value="Inactive">
+                                        <Setter Property="Foreground" Value="#B5BEC9"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -79,27 +81,27 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="IP / Port" Foreground="{StaticResource TextMutedBrush}"/>
-                <TextBlock Grid.Row="0" Grid.Column="1" Foreground="White"><Run Text="{Binding Snapshot.IpAddress}"/><Run Text=":"/><Run Text="{Binding Snapshot.Port}"/></TextBlock>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding EndpointText}" Foreground="White"/>
 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Polling" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
-                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Snapshot.PollingIntervalMs, StringFormat={}{0}ms}" Foreground="White" Margin="0,4,0,0"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PollingIntervalText}" Foreground="White" Margin="0,4,0,0"/>
 
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Last" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
-                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Snapshot.LastResponseMs, StringFormat={}{0}ms}" Foreground="White" Margin="0,4,0,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding LastResponseText}" Foreground="White" Margin="0,4,0,0"/>
 
                 <TextBlock Grid.Row="3" Grid.Column="0" Text="TX / RX" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
-                <TextBlock Grid.Row="3" Grid.Column="1" Foreground="White" Margin="0,4,0,0"><Run Text="{Binding Snapshot.TxPerMinute}"/><Run Text=" / "/><Run Text="{Binding Snapshot.RxPerMinute}"/></TextBlock>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding TxRxText}" Foreground="White" Margin="0,4,0,0"/>
 
                 <TextBlock Grid.Row="4" Grid.Column="0" Text="Error" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
-                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Snapshot.ErrorCount}" Margin="0,4,0,0">
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ErrorCount}" Margin="0,4,0,0">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Setter Property="Foreground" Value="White"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding Snapshot.ErrorCount}" Value="0">
+                                <DataTrigger Binding="{Binding ErrorCount}" Value="0">
                                     <Setter Property="Foreground" Value="White"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Snapshot.ErrorCount}" Value="1">
+                                <DataTrigger Binding="{Binding ErrorCount}" Value="1">
                                     <Setter Property="Foreground" Value="Tomato"/>
                                 </DataTrigger>
                             </Style.Triggers>
