@@ -1,0 +1,50 @@
+<UserControl x:Class="CAAutomationHub.Wpf.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:CAAutomationHub.Wpf.Controls"
+             xmlns:vm="clr-namespace:CAAutomationHub.Wpf.ViewModels"
+             x:Name="Root">
+    <UserControl.Resources><BooleanToVisibilityConverter x:Key="BoolToVisibility"/></UserControl.Resources>
+    <UserControl.DataContext>
+        <vm:DashboardViewModel />
+    </UserControl.DataContext>
+    <Grid Margin="20">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="220"/></Grid.RowDefinitions>
+        <Border Style="{StaticResource CardBorderStyle}" Padding="16" Margin="0,0,0,12">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <TextBlock Text="PLC 통신 상태 개요" FontSize="20" Foreground="White" Margin="0,0,20,0"/>
+                    <TextBlock Text="{Binding TotalCount, StringFormat=전체 {0}}" Foreground="White" Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding HealthyCount, StringFormat=정상 {0}}" Foreground="LightGreen" Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding WarningCount, StringFormat=주의 {0}}" Foreground="Khaki" Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding CongestedCount, StringFormat=정체 {0}}" Foreground="Orange" Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding ErrorCount, StringFormat=오류 {0}}" Foreground="Tomato"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                    <Button Content="새로고침" Command="{Binding RefreshCommand}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0"/>
+                    <Button Content="+ PLC 추가" Style="{StaticResource SecondaryButtonStyle}"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding PlcCards}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding DataContext.SelectPlcCommand, ElementName=Root}" CommandParameter="{Binding}" Background="Transparent" BorderThickness="0" Padding="0" Margin="0">
+                                <controls:PlcStatusCard Margin="0,0,12,0"/>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <StackPanel Grid.Column="1" Width="320" Margin="12,0,0,0" Visibility="{Binding IsDetailPaneOpen, Converter={StaticResource BoolToVisibility}}">
+                <Button Content="X" HorizontalAlignment="Right" Command="{Binding CloseDetailPaneCommand}" Style="{StaticResource SecondaryButtonStyle}"/>
+                <controls:PlcDetailPane DataContext="{Binding SelectedPlc}"/>
+            </StackPanel>
+        </Grid>
+        <controls:CommunicationTrendChart Grid.Row="2" Margin="0,12,0,0"/>
+    </Grid>
+</UserControl>

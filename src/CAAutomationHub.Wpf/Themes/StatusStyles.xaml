@@ -1,0 +1,6 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="StatusHealthyBrush" Color="#57D47B"/>
+    <SolidColorBrush x:Key="StatusWarningBrush" Color="#FFE072"/>
+    <SolidColorBrush x:Key="StatusCongestedBrush" Color="#FFAB40"/>
+    <SolidColorBrush x:Key="StatusErrorBrush" Color="#FF5A5A"/>
+</ResourceDictionary>

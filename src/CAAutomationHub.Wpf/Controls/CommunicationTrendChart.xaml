@@ -1,0 +1,3 @@
+<UserControl x:Class="CAAutomationHub.Wpf.Controls.CommunicationTrendChart" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Style="{StaticResource CardBorderStyle}" Padding="16"><TextBlock Text="통신 트렌드 (최근 30분) Placeholder" Foreground="{StaticResource TextMutedBrush}"/></Border>
+</UserControl>
