@@ -1,19 +1,139 @@
 <UserControl x:Class="CAAutomationHub.Wpf.Controls.PlcStatusCard"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Border Style="{StaticResource CardBorderStyle}" Width="260" Padding="12">
-        <StackPanel>
-            <TextBlock Text="{Binding PlcName}" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
-            <TextBlock Text="{Binding LineName}" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,8"/>
-            <TextBlock Text="{Binding Snapshot.ConnectionState}" Foreground="{StaticResource AccentBrush}"/>
-            <TextBlock Text="{Binding Snapshot.IpAddress, StringFormat=IP {0}}" Foreground="White"/>
-            <TextBlock Text="{Binding Snapshot.Port, StringFormat=Port {0}}" Foreground="White"/>
-            <TextBlock Text="{Binding Snapshot.PollingIntervalMs, StringFormat=Polling {0}ms}" Foreground="White"/>
-            <TextBlock Text="{Binding Snapshot.LastResponseMs, StringFormat=Last {0}ms}" Foreground="White"/>
-            <TextBlock Text="{Binding Snapshot.TxPerMinute, StringFormat=TX/min {0}}" Foreground="White"/>
-            <TextBlock Text="{Binding Snapshot.RxPerMinute, StringFormat=RX/min {0}}" Foreground="White"/>
-            <TextBlock Text="{Binding Snapshot.ErrorCount, StringFormat=Error {0}}" Foreground="Tomato"/>
-            <Border Margin="0,8,0,0" Height="36" Background="#222C3A" CornerRadius="4"><TextBlock Text="Mini Trend Placeholder" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/></Border>
-        </StackPanel>
+    <Border Style="{StaticResource CardBorderStyle}" Width="220" Height="420" Padding="12,10,12,8">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="56"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0">
+                <TextBlock Text="{Binding PlcName}" FontSize="34" FontWeight="SemiBold" Foreground="White" TextAlignment="Center"/>
+                <TextBlock Text="{Binding LineName}" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,10" TextAlignment="Center"/>
+            </StackPanel>
+
+            <Grid Grid.Row="1" HorizontalAlignment="Center" Margin="0,0,0,8">
+                <Ellipse Width="118" Height="118" StrokeThickness="8">
+                    <Ellipse.Style>
+                        <Style TargetType="Ellipse">
+                            <Setter Property="Stroke" Value="#4DA6FF"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Snapshot.ConnectionState}" Value="Warning">
+                                    <Setter Property="Stroke" Value="#FFD84E"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Snapshot.ConnectionState}" Value="Congested">
+                                    <Setter Property="Stroke" Value="#FF9A2E"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Snapshot.ConnectionState}" Value="Error">
+                                    <Setter Property="Stroke" Value="#FF5555"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Ellipse.Style>
+                </Ellipse>
+                <Border HorizontalAlignment="Center" VerticalAlignment="Center" Padding="8,3" CornerRadius="9" Background="#1E2E45">
+                    <TextBlock FontWeight="SemiBold">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="정상"/>
+                                <Setter Property="Foreground" Value="#5CC8FF"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Snapshot.ConnectionState}" Value="Warning">
+                                        <Setter Property="Text" Value="주의"/>
+                                        <Setter Property="Foreground" Value="#FFD84E"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Snapshot.ConnectionState}" Value="Congested">
+                                        <Setter Property="Text" Value="정체"/>
+                                        <Setter Property="Foreground" Value="#FF9A2E"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Snapshot.ConnectionState}" Value="Error">
+                                        <Setter Property="Text" Value="오류"/>
+                                        <Setter Property="Foreground" Value="#FF5555"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="2" HorizontalAlignment="Center" Padding="8,2" CornerRadius="10" Background="#15311F" Margin="0,0,0,8">
+                <TextBlock Text="● 온라인" Foreground="LightGreen" FontSize="14" FontWeight="SemiBold"/>
+            </Border>
+
+            <Grid Grid.Row="3" Margin="0,4,0,6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="IP / Port" Foreground="{StaticResource TextMutedBrush}"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Foreground="White"><Run Text="{Binding Snapshot.IpAddress}"/><Run Text=":"/><Run Text="{Binding Snapshot.Port}"/></TextBlock>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Polling" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Snapshot.PollingIntervalMs, StringFormat={}{0}ms}" Foreground="White" Margin="0,4,0,0"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Last" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Snapshot.LastResponseMs, StringFormat={}{0}ms}" Foreground="White" Margin="0,4,0,0"/>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="TX / RX" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Foreground="White" Margin="0,4,0,0"><Run Text="{Binding Snapshot.TxPerMinute}"/><Run Text=" / "/><Run Text="{Binding Snapshot.RxPerMinute}"/></TextBlock>
+
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Error" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Snapshot.ErrorCount}" Margin="0,4,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="White"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Snapshot.ErrorCount}" Value="0">
+                                    <Setter Property="Foreground" Value="White"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Snapshot.ErrorCount}" Value="1">
+                                    <Setter Property="Foreground" Value="Tomato"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+
+            <Border Grid.Row="4" Background="#1A2638" CornerRadius="4" Padding="8,4">
+                <DockPanel>
+                    <TextBlock Text="Mini Trend" Foreground="{StaticResource TextMutedBrush}" DockPanel.Dock="Left"/>
+                    <TextBlock Text="30분" Foreground="{StaticResource TextMutedBrush}" DockPanel.Dock="Right"/>
+                    <UniformGrid Rows="1" Columns="18" Margin="0,20,0,0" Height="20" VerticalAlignment="Bottom">
+                        <Rectangle Fill="#4DA6FF" Margin="1,8,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,3,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,10,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,5,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,6,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,2,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,11,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,9,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,4,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,7,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,1,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,5,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,9,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,4,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,11,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,6,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,3,1,0"/>
+                        <Rectangle Fill="#4DA6FF" Margin="1,8,1,0"/>
+                    </UniformGrid>
+                </DockPanel>
+            </Border>
+        </Grid>
     </Border>
 </UserControl>
