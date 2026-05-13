@@ -1,3 +1,124 @@
-<UserControl x:Class="CAAutomationHub.Wpf.Controls.CommunicationTrendChart" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Border Style="{StaticResource CardBorderStyle}" Padding="16"><TextBlock Text="통신 트렌드 (최근 30분) Placeholder" Foreground="{StaticResource TextMutedBrush}"/></Border>
+<UserControl x:Class="CAAutomationHub.Wpf.Controls.CommunicationTrendChart"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:CAAutomationHub.Wpf.Controls">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                <TextBlock Text="통신 트렌드 (최근 30분)"
+                           Foreground="White"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding SubtitleText, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           FontSize="12"
+                           Margin="0,1,0,0"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding CriteriaText, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           FontSize="11"
+                           Margin="0,1,0,0"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                <TextBlock Text="{Binding Trend.TargetName, RelativeSource={RelativeSource AncestorType=UserControl}, TargetNullValue=전체 PLC 통신 품질}"
+                           Foreground="{StaticResource AccentBrush}"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Right"/>
+                <TextBlock Text="{Binding WorstSummaryText, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           FontSize="11"
+                           HorizontalAlignment="Right"/>
+            </StackPanel>
+        </Grid>
+
+        <WrapPanel Grid.Row="1" Margin="0,0,0,6" HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal" Margin="0,0,18,0">
+                <TextBlock Text="{Binding SummaryLabel1, RelativeSource={RelativeSource AncestorType=UserControl}}" Foreground="{StaticResource TextMutedBrush}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="{Binding SummaryValue1, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                           Foreground="White"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,18,0">
+                <TextBlock Text="{Binding SummaryLabel2, RelativeSource={RelativeSource AncestorType=UserControl}}" Foreground="{StaticResource TextMutedBrush}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="{Binding SummaryValue2, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                           Foreground="Khaki"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,18,0">
+                <TextBlock Text="{Binding SummaryLabel3, RelativeSource={RelativeSource AncestorType=UserControl}}" Foreground="{StaticResource TextMutedBrush}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="{Binding SummaryValue3, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                           Foreground="Tomato"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding SummaryLabel4, RelativeSource={RelativeSource AncestorType=UserControl}}" Foreground="{StaticResource TextMutedBrush}" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="{Binding SummaryValue4, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                           Foreground="White"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </WrapPanel>
+
+        <WrapPanel Grid.Row="2" Margin="0,0,0,6" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                <Line X1="0" X2="18" Stroke="#50B2FF" StrokeThickness="1" Opacity="0.45" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="정상" Foreground="{StaticResource TextMutedBrush}" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                <Line X1="0" X2="18" Stroke="#FFDC56" StrokeThickness="1.5" Opacity="0.75" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="주의" Foreground="{StaticResource TextMutedBrush}" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                <Line X1="0" X2="18" Stroke="#FF972D" StrokeThickness="2" StrokeDashArray="4,2,1,2" Opacity="0.9" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="정체" Foreground="{StaticResource TextMutedBrush}" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                <Line X1="0" X2="18" Stroke="#FF5252" StrokeThickness="2.5" Opacity="1" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="오류" Foreground="{StaticResource TextMutedBrush}" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                <Line X1="0" X2="18" Stroke="#F0DC78" StrokeThickness="1" StrokeDashArray="4,2" Opacity="0.65" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="Warn threshold" Foreground="{StaticResource TextMutedBrush}" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                <Line X1="0" X2="18" Stroke="#FF972D" StrokeThickness="1" StrokeDashArray="4,2" Opacity="0.65" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="Congested threshold" Foreground="{StaticResource TextMutedBrush}" FontSize="11"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Line X1="0" X2="18" Stroke="#FF6363" StrokeThickness="1" StrokeDashArray="4,2" Opacity="0.75" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="Error threshold" Foreground="{StaticResource TextMutedBrush}" FontSize="11"/>
+            </StackPanel>
+        </WrapPanel>
+
+        <controls:TrendRenderControl Grid.Row="3"
+                                     MinHeight="128"
+                                     Points="{Binding Trend.Points, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                     Series="{Binding Trend.Series, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                     WarningThresholdMs="{Binding Trend.WarningThresholdMs, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                     CongestedThresholdMs="{Binding Trend.CongestedThresholdMs, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                     ErrorThresholdMs="{Binding Trend.ErrorThresholdMs, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                     IsOverview="{Binding Trend.IsOverview, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                     ShowThresholds="{Binding ShowThresholds, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+    </Grid>
 </UserControl>

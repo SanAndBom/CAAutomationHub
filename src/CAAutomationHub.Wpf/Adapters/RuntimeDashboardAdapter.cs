@@ -17,6 +17,6 @@ public sealed class RuntimeDashboardAdapter : IRuntimeDashboardAdapter
             ErrorCount: 0,
             SnapshotTime: DateTimeOffset.UtcNow);
 
-        return new DashboardSnapshot(health, Array.Empty<PlcCardSnapshot>());
+        return new DashboardSnapshot(health, Array.Empty<PlcCardSnapshot>(), CommunicationTrendSetSnapshot.Empty);
     }
 }

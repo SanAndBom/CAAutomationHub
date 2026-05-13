@@ -11,11 +11,17 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
 {
     private readonly IRuntimeDashboardAdapter _adapter;
     private readonly DispatcherTimer _refreshTimer;
+    private CommunicationTrendSetSnapshot _communicationTrendSet = CommunicationTrendSetSnapshot.Empty;
+    private CommunicationTrendSnapshot _currentCommunicationTrend = CommunicationTrendSnapshot.Empty;
     private PlcStatusCardViewModel? _selectedPlc;
     private bool _isDetailPaneOpen;
     private bool _isDisposed;
     private GridLength _detailPaneColumnWidth = new(0);
     private GridLength _detailPaneGapWidth = new(0);
+    private double _trendAverageResponseMs;
+    private double _trendMaxResponseMs;
+    private int _trendErrorCount;
+    private int _trendPointCount;
 
     public DashboardViewModel() : this(new FakeDashboardRuntimeAdapter()) { }
 
@@ -43,6 +49,39 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     public int WarningCount { get; private set; }
     public int CongestedCount { get; private set; }
     public int ErrorCount { get; private set; }
+    public double TrendAverageResponseMs
+    {
+        get => _trendAverageResponseMs;
+        private set => SetProperty(ref _trendAverageResponseMs, value);
+    }
+
+    public double TrendMaxResponseMs
+    {
+        get => _trendMaxResponseMs;
+        private set => SetProperty(ref _trendMaxResponseMs, value);
+    }
+
+    public int TrendErrorCount
+    {
+        get => _trendErrorCount;
+        private set => SetProperty(ref _trendErrorCount, value);
+    }
+
+    public int TrendPointCount
+    {
+        get => _trendPointCount;
+        private set => SetProperty(ref _trendPointCount, value);
+    }
+
+    public CommunicationTrendSnapshot CurrentCommunicationTrend
+    {
+        get => _currentCommunicationTrend;
+        private set
+        {
+            if (!SetProperty(ref _currentCommunicationTrend, value)) return;
+            UpdateTrendSummary();
+        }
+    }
 
     public PlcStatusCardViewModel? SelectedPlc
     {
@@ -51,6 +90,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         {
             if (!SetProperty(ref _selectedPlc, value)) return;
             SyncSelectedCardStates();
+            UpdateCurrentCommunicationTrend();
         }
     }
 
@@ -87,6 +127,8 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
 
     private void ApplySnapshot(DashboardSnapshot snapshot)
     {
+        _communicationTrendSet = snapshot.CommunicationTrend;
+
         foreach (var card in snapshot.PlcCards)
         {
             var existing = PlcCards.FirstOrDefault(plc => plc.Snapshot.PlcId == card.PlcId);
@@ -106,6 +148,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         }
 
         SyncSelectedCardStates();
+        UpdateCurrentCommunicationTrend();
 
         TotalCount = snapshot.Health.TotalPlcs;
         HealthyCount = snapshot.Health.HealthyCount;
@@ -140,6 +183,13 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private void SelectPlc(PlcStatusCardViewModel? plc)
     {
         if (plc is null) return;
+        if (SelectedPlc?.Snapshot.PlcId == plc.Snapshot.PlcId)
+        {
+            SelectedPlc = null;
+            IsDetailPaneOpen = false;
+            return;
+        }
+
         SelectedPlc = plc;
         IsDetailPaneOpen = true;
     }
@@ -152,6 +202,35 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         {
             card.IsSelected = selectedPlcId is not null && card.Snapshot.PlcId == selectedPlcId;
         }
+    }
+
+    private void UpdateCurrentCommunicationTrend()
+    {
+        var selectedPlcId = SelectedPlc?.Snapshot.PlcId;
+        var selectedTrend = selectedPlcId is null
+            ? null
+            : _communicationTrendSet.PlcTrends.FirstOrDefault(trend => trend.TargetId == selectedPlcId);
+
+        CurrentCommunicationTrend = selectedTrend ?? _communicationTrendSet.Overview;
+    }
+
+    private void UpdateTrendSummary()
+    {
+        var points = CurrentCommunicationTrend.Points;
+
+        if (points.Count == 0)
+        {
+            TrendAverageResponseMs = 0;
+            TrendMaxResponseMs = 0;
+            TrendErrorCount = 0;
+            TrendPointCount = 0;
+            return;
+        }
+
+        TrendAverageResponseMs = points.Average(point => point.ResponseMs);
+        TrendMaxResponseMs = points.Max(point => point.ResponseMs);
+        TrendErrorCount = points.Count(point => point.HasError || point.MarkerKind == TrendMarkerKind.Error);
+        TrendPointCount = points.Count;
     }
 
     private void OnCountsChanged()

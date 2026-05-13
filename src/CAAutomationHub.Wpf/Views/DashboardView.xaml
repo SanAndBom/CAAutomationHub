@@ -106,7 +106,11 @@
             </Border>
 
             <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource CardBorderStyle}" Padding="10" HorizontalAlignment="Stretch">
-                <controls:CommunicationTrendChart/>
+                <controls:CommunicationTrendChart Trend="{Binding CurrentCommunicationTrend}"
+                                                   AverageResponseMs="{Binding TrendAverageResponseMs}"
+                                                   MaxResponseMs="{Binding TrendMaxResponseMs}"
+                                                   ErrorCount="{Binding TrendErrorCount}"
+                                                   PointCount="{Binding TrendPointCount}"/>
             </Border>
 
             <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Style="{StaticResource CardBorderStyle}" Padding="10" Visibility="{Binding IsDetailPaneOpen, Converter={StaticResource BoolToVisibility}}">
