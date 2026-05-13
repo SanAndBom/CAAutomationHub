@@ -47,7 +47,11 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     public PlcStatusCardViewModel? SelectedPlc
     {
         get => _selectedPlc;
-        private set => SetProperty(ref _selectedPlc, value);
+        private set
+        {
+            if (!SetProperty(ref _selectedPlc, value)) return;
+            SyncSelectedCardStates();
+        }
     }
 
     public bool IsDetailPaneOpen
@@ -101,6 +105,8 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
             if (selected is not null && !ReferenceEquals(selected, SelectedPlc)) SelectedPlc = selected;
         }
 
+        SyncSelectedCardStates();
+
         TotalCount = snapshot.Health.TotalPlcs;
         HealthyCount = snapshot.Health.HealthyCount;
         WarningCount = snapshot.Health.WarningCount;
@@ -136,6 +142,16 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         if (plc is null) return;
         SelectedPlc = plc;
         IsDetailPaneOpen = true;
+    }
+
+    private void SyncSelectedCardStates()
+    {
+        var selectedPlcId = SelectedPlc?.Snapshot.PlcId;
+
+        foreach (var card in PlcCards)
+        {
+            card.IsSelected = selectedPlcId is not null && card.Snapshot.PlcId == selectedPlcId;
+        }
     }
 
     private void OnCountsChanged()

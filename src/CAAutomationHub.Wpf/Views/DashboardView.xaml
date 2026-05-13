@@ -6,6 +6,24 @@
              x:Name="Root">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        <Style x:Key="PlcCardButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
     <UserControl.DataContext>
         <vm:DashboardViewModel />
@@ -59,7 +77,15 @@
             </Grid.ColumnDefinitions>
 
             <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource CardBorderStyle}" Padding="10,8,10,10" Margin="0,0,0,8" HorizontalAlignment="Stretch">
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                <ScrollViewer x:Name="PlcCardScrollViewer"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled"
+                              VerticalAlignment="Stretch"
+                              HorizontalAlignment="Stretch"
+                              PreviewMouseLeftButtonDown="OnPlcCardScrollViewerPreviewMouseLeftButtonDown"
+                              PreviewMouseMove="OnPlcCardScrollViewerPreviewMouseMove"
+                              PreviewMouseLeftButtonUp="OnPlcCardScrollViewerPreviewMouseLeftButtonUp"
+                              PreviewMouseWheel="OnPlcCardScrollViewerPreviewMouseWheel">
                     <ItemsControl ItemsSource="{Binding PlcCards}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -68,7 +94,9 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Command="{Binding DataContext.SelectPlcCommand, ElementName=Root}" CommandParameter="{Binding}" Background="Transparent" BorderThickness="0" Padding="0" Margin="0,0,10,0">
+                                <Button Command="{Binding DataContext.SelectPlcCommand, ElementName=Root}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource PlcCardButtonStyle}">
                                     <controls:PlcStatusCard/>
                                 </Button>
                             </DataTemplate>

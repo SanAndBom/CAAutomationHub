@@ -4,9 +4,17 @@ namespace CAAutomationHub.Wpf.ViewModels;
 
 public sealed class PlcStatusCardViewModel : ViewModelBase
 {
+    private bool _isSelected;
+
     public PlcStatusCardViewModel(PlcCardSnapshot snapshot) => Snapshot = snapshot;
 
     public PlcCardSnapshot Snapshot { get; private set; }
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set => SetProperty(ref _isSelected, value);
+    }
+
     public string PlcId => Snapshot.PlcId;
     public string PlcName => Snapshot.PlcName;
     public string LineName => Snapshot.LineName;
