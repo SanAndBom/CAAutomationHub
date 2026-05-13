@@ -6,4 +6,5 @@ public sealed record RuntimeHealthSnapshot(
     int WarningCount,
     int CongestedCount,
     int ErrorCount,
-    DateTimeOffset SnapshotTime);
+    DateTimeOffset SnapshotTime,
+    int InactiveCount = 0);

@@ -6,6 +6,30 @@ namespace CAAutomationHub.Wpf.Tests.ViewModels;
 public sealed class PlcEditorDialogViewModelTests
 {
     [Fact]
+    public void Constructor_WhenAddingConfiguration_PopulatesDefaultFields()
+    {
+        var configuration = CreateConfiguration() with
+        {
+            PlcId = "PLC-06",
+            PlcName = "PLC 06",
+            LineName = "Line-1",
+            Description = "신규 PLC",
+            IpAddress = "192.168.0.26",
+            PollingIntervalMs = 1000
+        };
+
+        var viewModel = new PlcEditorDialogViewModel(configuration, isEditMode: false);
+
+        Assert.Equal("PLC 추가", viewModel.DialogTitle);
+        Assert.Equal("PLC 추가", viewModel.HeaderTitle);
+        Assert.Equal("PLC 06", viewModel.PlcName);
+        Assert.Equal("Line-1", viewModel.LineName);
+        Assert.Equal("신규 PLC", viewModel.Description);
+        Assert.Equal("192.168.0.26", viewModel.IpAddress);
+        Assert.Equal(1000, viewModel.PollingIntervalMs);
+    }
+
+    [Fact]
     public void Constructor_WhenEditingConfiguration_PopulatesEditableFields()
     {
         var configuration = CreateConfiguration() with

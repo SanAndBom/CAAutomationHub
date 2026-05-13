@@ -30,14 +30,20 @@ public partial class DashboardView : UserControl
 
     private void OnAddPlcClick(object sender, System.Windows.RoutedEventArgs e)
     {
-        // AH-WPF-03 keeps this prototype in code-behind. Move dialog creation to an
-        // IDialogService or ViewModel command when the add/edit workflow becomes real.
-        var dialog = new PlcEditorDialogWindow
+        if (DataContext is not DashboardViewModel viewModel) return;
+
+        var configuration = viewModel.CreateDefaultPlcConfiguration();
+        if (configuration is null) return;
+
+        var dialog = new PlcEditorDialogWindow(configuration, isEditMode: false)
         {
             Owner = System.Windows.Window.GetWindow(this)
         };
 
-        dialog.ShowDialog();
+        if (dialog.ShowDialog() == true && dialog.ResultConfiguration is not null)
+        {
+            viewModel.AddPlcCommand.Execute(dialog.ResultConfiguration);
+        }
     }
 
     private void OnEditSelectedPlcRequested(object sender, System.Windows.RoutedEventArgs e)

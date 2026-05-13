@@ -39,6 +39,9 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         RefreshCommand = new RelayCommand(_ => LoadSnapshot());
         SelectPlcCommand = new RelayCommand(p => SelectPlc(p as PlcStatusCardViewModel));
         CloseDetailPaneCommand = new RelayCommand(_ => IsDetailPaneOpen = false);
+        AddPlcCommand = new RelayCommand(
+            p => AddPlc(p as PlcDashboardConfiguration),
+            p => _configurationService is not null && p is PlcDashboardConfiguration);
         EditSelectedPlcCommand = new RelayCommand(
             p => EditSelectedPlc(p as PlcDashboardConfiguration),
             p => _configurationService is not null && p is PlcDashboardConfiguration);
@@ -58,6 +61,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     public ICommand RefreshCommand { get; }
     public ICommand SelectPlcCommand { get; }
     public ICommand CloseDetailPaneCommand { get; }
+    public ICommand AddPlcCommand { get; }
     public ICommand EditSelectedPlcCommand { get; }
     public ICommand DeleteSelectedPlcCommand { get; }
     public int TotalCount { get; private set; }
@@ -65,6 +69,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     public int WarningCount { get; private set; }
     public int CongestedCount { get; private set; }
     public int ErrorCount { get; private set; }
+    public int InactiveCount { get; private set; }
     public double TrendAverageResponseMs
     {
         get => _trendAverageResponseMs;
@@ -191,6 +196,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         WarningCount = snapshot.Health.WarningCount;
         CongestedCount = snapshot.Health.CongestedCount;
         ErrorCount = snapshot.Health.ErrorCount;
+        InactiveCount = snapshot.Health.InactiveCount;
         OnCountsChanged();
     }
 
@@ -216,6 +222,23 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
 
     public PlcDashboardConfiguration? GetSelectedPlcConfiguration()
         => SelectedPlc is null ? null : _configurationService?.GetPlcConfiguration(SelectedPlc.Snapshot.PlcId);
+
+    public PlcDashboardConfiguration? CreateDefaultPlcConfiguration()
+        => _configurationService?.CreateDefaultPlcConfiguration();
+
+    private void AddPlc(PlcDashboardConfiguration? configuration)
+    {
+        if (_configurationService is null || configuration is null) return;
+
+        var added = _configurationService.AddPlc(configuration);
+        LoadSnapshot();
+
+        var addedCard = PlcCards.FirstOrDefault(card => card.PlcId == added.PlcId);
+        if (addedCard is null) return;
+
+        SelectedPlc = addedCard;
+        IsDetailPaneOpen = true;
+    }
 
     private void EditSelectedPlc(PlcDashboardConfiguration? configuration)
     {
@@ -302,10 +325,12 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         RaisePropertyChanged(nameof(WarningCount));
         RaisePropertyChanged(nameof(CongestedCount));
         RaisePropertyChanged(nameof(ErrorCount));
+        RaisePropertyChanged(nameof(InactiveCount));
     }
 
     private void RaiseConfigurationCommandStatesChanged()
     {
+        if (AddPlcCommand is RelayCommand addCommand) addCommand.RaiseCanExecuteChanged();
         if (EditSelectedPlcCommand is RelayCommand editCommand) editCommand.RaiseCanExecuteChanged();
         if (DeleteSelectedPlcCommand is RelayCommand deleteCommand) deleteCommand.RaiseCanExecuteChanged();
     }

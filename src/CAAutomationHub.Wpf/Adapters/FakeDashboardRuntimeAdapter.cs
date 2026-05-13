@@ -38,7 +38,8 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
             cards.Count(c => c.ConnectionState == PlcConnectionState.Warning),
             cards.Count(c => c.ConnectionState == PlcConnectionState.Congested),
             cards.Count(c => c.ConnectionState == PlcConnectionState.Error),
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow,
+            cards.Count(c => c.ConnectionState == PlcConnectionState.Inactive));
 
         var trend = CreateTrendSet(cards, tick);
 
@@ -58,6 +59,33 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
         lock (_syncRoot)
         {
             return _configurations.FirstOrDefault(configuration => configuration.PlcId == plcId);
+        }
+    }
+
+    public PlcDashboardConfiguration CreateDefaultPlcConfiguration()
+    {
+        lock (_syncRoot)
+        {
+            var nextIndex = GetNextConfigurationIndex(_configurations);
+            return CreateDefaultConfiguration(nextIndex);
+        }
+    }
+
+    public PlcDashboardConfiguration AddPlc(PlcDashboardConfiguration configuration)
+    {
+        lock (_syncRoot)
+        {
+            var nextIndex = GetNextConfigurationIndex(_configurations);
+            var normalized = configuration with
+            {
+                PlcId = $"PLC-{nextIndex:00}",
+                IpAddress = string.IsNullOrWhiteSpace(configuration.IpAddress)
+                    ? $"192.168.0.{20 + nextIndex}"
+                    : configuration.IpAddress
+            };
+
+            _configurations.Add(normalized);
+            return normalized;
         }
     }
 
@@ -81,22 +109,47 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
     }
 
     private static List<PlcDashboardConfiguration> CreateDefaultConfigurations()
-        => Enumerable.Range(1, 10)
-            .Select(index => new PlcDashboardConfiguration(
-                $"PLC-{index:00}",
+        => Enumerable.Range(1, 5)
+            .Select(index => CreateDefaultConfiguration(
+                index,
                 $"Press Line PLC {index:00}",
                 $"Line-{((index - 1) % 4) + 1}",
                 $"Press line PLC {index:00} fake configuration",
-                $"192.168.0.{20 + index}",
-                2004,
                 500 + (index * 50),
-                800,
-                5,
-                5,
-                AutoReconnect: true,
-                ConnectOnStartup: true,
-                IsEnabled: index != 5))
+                isEnabled: index != 5))
             .ToList();
+
+    private static PlcDashboardConfiguration CreateDefaultConfiguration(
+        int index,
+        string? plcName = null,
+        string lineName = "Line-1",
+        string description = "신규 PLC",
+        int pollingIntervalMs = 1000,
+        bool isEnabled = true)
+        => new(
+            $"PLC-{index:00}",
+            plcName ?? $"PLC {index:00}",
+            lineName,
+            description,
+            $"192.168.0.{20 + index}",
+            2004,
+            pollingIntervalMs,
+            800,
+            5,
+            5,
+            AutoReconnect: true,
+            ConnectOnStartup: true,
+            IsEnabled: isEnabled);
+
+    private static int GetNextConfigurationIndex(IEnumerable<PlcDashboardConfiguration> configurations)
+    {
+        var maxIndex = configurations
+            .Select(configuration => GetStableIndex(configuration.PlcId, fallbackIndex: 0))
+            .DefaultIfEmpty(0)
+            .Max();
+
+        return maxIndex + 1;
+    }
 
     private static PlcConnectionState GetCyclingState(int phase)
     {

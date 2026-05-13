@@ -55,7 +55,9 @@
                     <TextBlock Text="정체" Foreground="Orange" Margin="0,0,4,0"/>
                     <TextBlock Text="{Binding CongestedCount}" Foreground="Orange" FontSize="32" FontWeight="SemiBold" Margin="0,0,22,0"/>
                     <TextBlock Text="오류" Foreground="Tomato" Margin="0,0,4,0"/>
-                    <TextBlock Text="{Binding ErrorCount}" Foreground="Tomato" FontSize="32" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding ErrorCount}" Foreground="Tomato" FontSize="32" FontWeight="SemiBold" Margin="0,0,22,0"/>
+                    <TextBlock Text="비활성" Foreground="#B5BEC9" Margin="0,0,4,0"/>
+                    <TextBlock Text="{Binding InactiveCount}" Foreground="#B5BEC9" FontSize="32" FontWeight="SemiBold"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
