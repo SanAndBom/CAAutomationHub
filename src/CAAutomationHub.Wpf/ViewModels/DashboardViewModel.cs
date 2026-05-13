@@ -149,8 +149,22 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
 
     private void ApplySnapshot(DashboardSnapshot snapshot)
     {
-        _communicationTrendSet = snapshot.CommunicationTrend;
-        var snapshotPlcIds = snapshot.PlcCards.Select(card => card.PlcId).ToHashSet();
+        ApplyTrend(snapshot.CommunicationTrend);
+        var snapshotPlcIds = RemoveMissingCards(snapshot.PlcCards);
+        ClearSelectionIfMissing(snapshotPlcIds);
+        MergeOrUpdateCards(snapshot.PlcCards);
+        SyncSelectedPlcAfterSnapshot();
+        SyncSelectedCardStates();
+        UpdateCurrentCommunicationTrend();
+        ApplyHealth(snapshot.Health);
+    }
+
+    private void ApplyTrend(CommunicationTrendSetSnapshot communicationTrend)
+        => _communicationTrendSet = communicationTrend;
+
+    private HashSet<string> RemoveMissingCards(IReadOnlyList<PlcCardSnapshot> cards)
+    {
+        var snapshotPlcIds = cards.Select(card => card.PlcId).ToHashSet();
 
         for (var index = PlcCards.Count - 1; index >= 0; index--)
         {
@@ -159,13 +173,20 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
             PlcCards.RemoveAt(index);
         }
 
-        if (SelectedPlc is not null && !snapshotPlcIds.Contains(SelectedPlc.Snapshot.PlcId))
-        {
-            SelectedPlc = null;
-            IsDetailPaneOpen = false;
-        }
+        return snapshotPlcIds;
+    }
 
-        foreach (var card in snapshot.PlcCards)
+    private void ClearSelectionIfMissing(IReadOnlySet<string> snapshotPlcIds)
+    {
+        if (SelectedPlc is null || snapshotPlcIds.Contains(SelectedPlc.Snapshot.PlcId)) return;
+
+        SelectedPlc = null;
+        IsDetailPaneOpen = false;
+    }
+
+    private void MergeOrUpdateCards(IReadOnlyList<PlcCardSnapshot> cards)
+    {
+        foreach (var card in cards)
         {
             var existing = PlcCards.FirstOrDefault(plc => plc.Snapshot.PlcId == card.PlcId);
             if (existing is null)
@@ -176,27 +197,28 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
 
             existing.UpdateSnapshot(card);
         }
+    }
 
-        if (SelectedPlc is not null)
-        {
-            var selected = PlcCards.FirstOrDefault(plc => plc.Snapshot.PlcId == SelectedPlc.Snapshot.PlcId);
-            if (selected is not null && !ReferenceEquals(selected, SelectedPlc)) SelectedPlc = selected;
-            if (selected is null)
-            {
-                SelectedPlc = null;
-                IsDetailPaneOpen = false;
-            }
-        }
+    private void SyncSelectedPlcAfterSnapshot()
+    {
+        if (SelectedPlc is null) return;
 
-        SyncSelectedCardStates();
-        UpdateCurrentCommunicationTrend();
+        var selected = PlcCards.FirstOrDefault(plc => plc.Snapshot.PlcId == SelectedPlc.Snapshot.PlcId);
+        if (selected is not null && !ReferenceEquals(selected, SelectedPlc)) SelectedPlc = selected;
+        if (selected is not null) return;
 
-        TotalCount = snapshot.Health.TotalPlcs;
-        HealthyCount = snapshot.Health.HealthyCount;
-        WarningCount = snapshot.Health.WarningCount;
-        CongestedCount = snapshot.Health.CongestedCount;
-        ErrorCount = snapshot.Health.ErrorCount;
-        InactiveCount = snapshot.Health.InactiveCount;
+        SelectedPlc = null;
+        IsDetailPaneOpen = false;
+    }
+
+    private void ApplyHealth(RuntimeHealthSnapshot health)
+    {
+        TotalCount = health.TotalPlcs;
+        HealthyCount = health.HealthyCount;
+        WarningCount = health.WarningCount;
+        CongestedCount = health.CongestedCount;
+        ErrorCount = health.ErrorCount;
+        InactiveCount = health.InactiveCount;
         OnCountsChanged();
     }
 

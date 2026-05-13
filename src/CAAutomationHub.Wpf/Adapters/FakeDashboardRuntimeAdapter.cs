@@ -5,12 +5,6 @@ namespace CAAutomationHub.Wpf.Adapters;
 
 public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlcDashboardConfigurationService
 {
-    private const int TrendPointCount = 360;
-    private const int SequenceLatencyBucketCount = 10;
-    private static readonly TimeSpan SequenceLatencyBucketDuration = TimeSpan.FromSeconds(30);
-    private const double WarningThresholdMs = 250;
-    private const double CongestedThresholdMs = 500;
-    private const double ErrorThresholdMs = 750;
     private readonly object _syncRoot = new();
     private readonly List<PlcDashboardConfiguration> _configurations;
     private int _snapshotIndex;
@@ -43,7 +37,7 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
             DateTimeOffset.UtcNow,
             cards.Count(c => c.ConnectionState == PlcConnectionState.Inactive));
 
-        var trend = CreateTrendSet(cards, tick);
+        var trend = FakeCommunicationTrendFactory.Create(cards, tick);
 
         return new DashboardSnapshot(health, cards, trend);
     }
@@ -200,7 +194,7 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
             PlcConnectionState.Congested => index == 3 && congestionPhase >= 8 ? 1 : index == 9 ? 3 : 0,
             _ => 0
         };
-        var runtimeSignal = CreateRuntimeSignal(state, index, tick);
+        var runtimeSignal = FakeRuntimeSignalFactory.Create(state, index, tick);
 
         return new PlcCardSnapshot(
             configuration.PlcId,
@@ -216,87 +210,6 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
             errorCount,
             runtimeSignal);
     }
-
-    private static PlcRuntimeSignalSnapshot CreateRuntimeSignal(PlcConnectionState state, int index, int tick)
-    {
-        var (sequenceName, sequenceStatus, elapsed, message) = state switch
-        {
-            PlcConnectionState.Healthy => (
-                "폴링",
-                RuntimeSequenceStatus.Completed,
-                TimeSpan.Zero,
-                "최근 시퀀스 응답 정상"),
-            PlcConnectionState.Warning => (
-                "DB조회",
-                RuntimeSequenceStatus.Delayed,
-                TimeSpan.FromSeconds(8 + ((tick + index) % 7)),
-                "요청~응답 지연 감지"),
-            PlcConnectionState.Congested => (
-                "데이터전송",
-                RuntimeSequenceStatus.Waiting,
-                TimeSpan.FromSeconds(5 + ((tick + index) % 9)),
-                "시퀀스 응답 대기 중"),
-            PlcConnectionState.Error => (
-                index % 2 == 0 ? "완공응답" : "착공응답",
-                RuntimeSequenceStatus.Failed,
-                TimeSpan.FromSeconds(18 + (tick % 10)),
-                "시퀀스 응답 오류"),
-            PlcConnectionState.Inactive => (
-                "대기",
-                RuntimeSequenceStatus.Idle,
-                TimeSpan.Zero,
-                "PLC 비활성"),
-            _ => (
-                "대기",
-                RuntimeSequenceStatus.Idle,
-                TimeSpan.Zero,
-                null)
-        };
-
-        return new PlcRuntimeSignalSnapshot(
-            sequenceName,
-            sequenceStatus,
-            elapsed,
-            message,
-            CreateSequenceLatencyBuckets(state, index, tick));
-    }
-
-    private static IReadOnlyList<SequenceResponseLatencyBucket> CreateSequenceLatencyBuckets(
-        PlcConnectionState state,
-        int index,
-        int tick)
-    {
-        var now = DateTimeOffset.UtcNow;
-
-        return Enumerable.Range(0, SequenceLatencyBucketCount)
-            .Select(bucketIndex =>
-            {
-                var ageFromNow = SequenceLatencyBucketCount - 1 - bucketIndex;
-                var bucketStart = now.AddTicks(-(SequenceLatencyBucketDuration.Ticks * ageFromNow));
-                var wave = (int)Math.Round(Math.Sin((bucketIndex + tick + index) / 2.4) * 12);
-                var pulse = (bucketIndex + tick + index) % 6 == 0 ? 24 : 0;
-                var (startBase, completionBase) = GetSequenceLatencyBase(state);
-                var errorSpike = state == PlcConnectionState.Error && (bucketIndex + tick + index) % 4 == 0 ? 220 : 0;
-
-                return new SequenceResponseLatencyBucket(
-                    bucketStart,
-                    SequenceLatencyBucketDuration,
-                    Math.Max(0, startBase + wave + pulse + errorSpike),
-                    Math.Max(0, completionBase + wave + (pulse / 2) + errorSpike));
-            })
-            .ToArray();
-    }
-
-    private static (int StartResponseMs, int CompletionResponseMs) GetSequenceLatencyBase(PlcConnectionState state)
-        => state switch
-        {
-            PlcConnectionState.Healthy => (42, 56),
-            PlcConnectionState.Warning => (180, 235),
-            PlcConnectionState.Congested => (410, 485),
-            PlcConnectionState.Error => (620, 720),
-            PlcConnectionState.Inactive => (0, 0),
-            _ => (0, 0)
-        };
 
     private static PlcConnectionState GetState(int index, int congestionPhase)
         => index switch
@@ -318,121 +231,4 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
             : fallbackIndex;
     }
 
-    private static CommunicationTrendSetSnapshot CreateTrendSet(IReadOnlyList<PlcCardSnapshot> cards, int tick)
-    {
-        var plcTrends = cards
-            .Select((card, index) => CreatePlcTrend(card, index, tick))
-            .ToArray();
-        var worst = plcTrends
-            .SelectMany(trend => trend.Points.Select(point => new { trend, point }))
-            .MaxBy(item => item.point.ResponseMs);
-        var series = plcTrends
-            .Select(trend =>
-            {
-                var card = cards.First(item => item.PlcId == trend.TargetId);
-                return new CommunicationTrendSeries(
-                    trend.TargetId,
-                    trend.TargetName,
-                    card.ConnectionState,
-                    trend.TargetId == worst?.trend.TargetId,
-                    trend.Points);
-            })
-            .ToArray();
-
-        var overviewPoints = Enumerable.Range(0, TrendPointCount)
-            .Select(sampleIndex =>
-            {
-                var pointsAtSample = plcTrends
-                    .Select(trend => trend.Points[sampleIndex])
-                    .ToArray();
-                var responseMs = pointsAtSample.Max(point => point.ResponseMs);
-                var hasError = pointsAtSample.Any(point => point.HasError);
-                var markerKind = hasError ? TrendMarkerKind.Error : TrendMarkerKind.None;
-
-                return new TrendPoint(
-                    pointsAtSample[0].OccurredAt,
-                    responseMs,
-                    hasError,
-                    markerKind,
-                    CreateMarkerText(markerKind, responseMs));
-            })
-            .ToArray();
-
-        var overview = new CommunicationTrendSnapshot(
-            "overview",
-            "전체 PLC 통신 품질",
-            isOverview: true,
-            WarningThresholdMs,
-            ErrorThresholdMs,
-            overviewPoints,
-            worst?.trend.TargetId,
-            worst?.trend.TargetName,
-            worst?.point.ResponseMs,
-            series,
-            CongestedThresholdMs);
-
-        return new CommunicationTrendSetSnapshot(overview, plcTrends);
-    }
-
-    private static CommunicationTrendSnapshot CreatePlcTrend(PlcCardSnapshot card, int cardIndex, int tick)
-    {
-        var now = DateTimeOffset.UtcNow;
-        var points = Enumerable.Range(0, TrendPointCount)
-            .Select(sampleIndex =>
-            {
-                var ageFromNow = TrendPointCount - 1 - sampleIndex;
-                var occurredAt = now.AddSeconds(-ageFromNow * 5);
-                var wave = Math.Sin((sampleIndex + tick + (cardIndex * 11)) / 14.0) * 22;
-                var pulse = ((sampleIndex + tick + cardIndex) % 47 == 0) ? 95 : 0;
-                var baseResponse = GetBaseResponse(card);
-                var responseMs = Math.Max(0, baseResponse + wave + pulse);
-                var hasError = card.ConnectionState == PlcConnectionState.Error
-                    ? (sampleIndex + tick + cardIndex) % 19 == 0
-                    : card.ErrorCount > 0 && (sampleIndex + tick + cardIndex) % 71 == 0;
-                var markerKind = GetMarkerKind(responseMs, hasError);
-
-                return new TrendPoint(
-                    occurredAt,
-                    responseMs,
-                    hasError,
-                    markerKind,
-                    CreateMarkerText(markerKind, responseMs));
-            })
-            .ToArray();
-
-        return new CommunicationTrendSnapshot(
-            card.PlcId,
-            card.PlcName,
-            isOverview: false,
-            WarningThresholdMs,
-            ErrorThresholdMs,
-            points,
-            congestedThresholdMs: CongestedThresholdMs);
-    }
-
-    private static double GetBaseResponse(PlcCardSnapshot card)
-        => card.ConnectionState switch
-        {
-            PlcConnectionState.Inactive => 0,
-            PlcConnectionState.Healthy => Math.Max(24, card.LastResponseMs),
-            PlcConnectionState.Warning => Math.Max(260, card.LastResponseMs),
-            PlcConnectionState.Congested => Math.Max(420, card.LastResponseMs),
-            PlcConnectionState.Error => Math.Max(820, card.LastResponseMs),
-            _ => Math.Max(0, card.LastResponseMs)
-        };
-
-    private static TrendMarkerKind GetMarkerKind(double responseMs, bool hasError)
-    {
-        if (hasError || responseMs > ErrorThresholdMs) return TrendMarkerKind.Error;
-        if (responseMs > WarningThresholdMs) return TrendMarkerKind.Warning;
-        return TrendMarkerKind.None;
-    }
-
-    private static string? CreateMarkerText(TrendMarkerKind markerKind, double responseMs)
-        => markerKind switch
-        {
-            TrendMarkerKind.Error => $"Error {responseMs:0}ms",
-            TrendMarkerKind.Warning => $"Warning {responseMs:0}ms",
-            _ => null
-        };
 }

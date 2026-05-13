@@ -266,25 +266,6 @@ public sealed class TrendRenderControl : FrameworkElement
         }
     }
 
-    private static void DrawWorstSeriesHighlight(DrawingContext dc, Rect plot, IReadOnlyList<TrendPoint> points, double yMax)
-    {
-        var haloPen = new Pen(new SolidColorBrush(Color.FromArgb(165, 255, 255, 255)), 3.8)
-        {
-            StartLineCap = PenLineCap.Round,
-            EndLineCap = PenLineCap.Round,
-            LineJoin = PenLineJoin.Round
-        };
-        var corePen = new Pen(new SolidColorBrush(Color.FromArgb(235, 48, 197, 255)), 2.0)
-        {
-            StartLineCap = PenLineCap.Round,
-            EndLineCap = PenLineCap.Round,
-            LineJoin = PenLineJoin.Round
-        };
-
-        DrawSeriesLine(dc, plot, points, yMax, haloPen);
-        DrawSeriesLine(dc, plot, points, yMax, corePen);
-    }
-
     private static void DrawOverviewErrorMarkers(DrawingContext dc, Rect plot, IReadOnlyList<CommunicationTrendSeries> series, double yMax)
     {
         var candidates = series
@@ -375,77 +356,6 @@ public sealed class TrendRenderControl : FrameworkElement
             fontSize,
             brush,
             VisualTreeHelper.GetDpi(this).PixelsPerDip);
-
-    private static void DrawResponseLine(DrawingContext dc, Rect plot, IReadOnlyList<TrendPoint> points, double yMax)
-    {
-        var linePen = new Pen(new SolidColorBrush(Color.FromRgb(48, 197, 255)), 1.8);
-        var geometry = new StreamGeometry();
-
-        using (var context = geometry.Open())
-        {
-            context.BeginFigure(ToPoint(plot, points[0], 0, points.Count, yMax), isFilled: false, isClosed: false);
-
-            for (var index = 1; index < points.Count; index++)
-            {
-                context.LineTo(ToPoint(plot, points[index], index, points.Count, yMax), isStroked: true, isSmoothJoin: false);
-            }
-        }
-
-        geometry.Freeze();
-        dc.DrawGeometry(null, linePen, geometry);
-    }
-
-    private static void DrawMarkers(DrawingContext dc, Rect plot, IReadOnlyList<TrendPoint> points, double yMax, bool isOverview)
-    {
-        var warningBrush = new SolidColorBrush(Color.FromRgb(240, 220, 120));
-        var errorBrush = new SolidColorBrush(Color.FromRgb(255, 99, 99));
-        var markerBorder = new Pen(new SolidColorBrush(Color.FromRgb(18, 24, 35)), 1);
-        var markerIndexes = GetMarkerIndexes(points, isOverview).ToHashSet();
-
-        for (var index = 0; index < points.Count; index++)
-        {
-            var point = points[index];
-            if (point.MarkerKind == TrendMarkerKind.None) continue;
-            if (!markerIndexes.Contains(index)) continue;
-
-            var center = ToPoint(plot, point, index, points.Count, yMax);
-            var radius = point.MarkerKind == TrendMarkerKind.Error ? 4.2 : 3.2;
-            var brush = point.MarkerKind == TrendMarkerKind.Error ? errorBrush : warningBrush;
-            dc.DrawEllipse(brush, markerBorder, center, radius, radius);
-        }
-    }
-
-    private static IEnumerable<int> GetMarkerIndexes(IReadOnlyList<TrendPoint> points, bool isOverview)
-    {
-        if (!isOverview)
-        {
-            for (var index = 0; index < points.Count; index++)
-            {
-                if (points[index].MarkerKind != TrendMarkerKind.None) yield return index;
-            }
-
-            yield break;
-        }
-
-        var errorIndexes = points
-            .Select((point, index) => new { point, index })
-            .Where(item => item.point.MarkerKind == TrendMarkerKind.Error)
-            .Select(item => item.index)
-            .ToArray();
-        const int maxOverviewErrorMarkers = 48;
-
-        if (errorIndexes.Length <= maxOverviewErrorMarkers)
-        {
-            foreach (var index in errorIndexes) yield return index;
-            yield break;
-        }
-
-        var stride = Math.Ceiling(errorIndexes.Length / (double)maxOverviewErrorMarkers);
-        for (var index = 0; index < errorIndexes.Length; index++)
-        {
-            if (index % stride == 0) yield return errorIndexes[index];
-        }
-    }
 
     private double GetFixedMaxY()
         => Math.Max(Math.Max(ErrorThresholdMs * 1.2, Math.Max(CongestedThresholdMs, WarningThresholdMs) * 1.2), MinimumFixedMaxY);
