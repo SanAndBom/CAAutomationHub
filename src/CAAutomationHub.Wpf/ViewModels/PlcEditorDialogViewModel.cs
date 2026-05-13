@@ -1,11 +1,13 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Windows.Media;
+using CAAutomationHub.Wpf.Models.Dashboard;
 
 namespace CAAutomationHub.Wpf.ViewModels;
 
 public sealed class PlcEditorDialogViewModel : ViewModelBase
 {
+    private readonly string _plcId;
     private PlcConnectionTestState _testState = PlcConnectionTestState.NotTested;
     private string _plcName = "롤러홀개공기";
     private string _lineName = "SF절단라인";
@@ -21,7 +23,28 @@ public sealed class PlcEditorDialogViewModel : ViewModelBase
     private bool _connectOnStartup = true;
 
     public PlcEditorDialogViewModel()
+        : this(CreateDefaultPrototypeConfiguration(), isEditMode: false)
     {
+    }
+
+    public PlcEditorDialogViewModel(PlcDashboardConfiguration configuration, bool isEditMode)
+    {
+        _plcId = configuration.PlcId;
+        _plcName = configuration.PlcName;
+        _lineName = configuration.LineName;
+        _description = configuration.Description;
+        _ipAddress = configuration.IpAddress;
+        _port = configuration.Port;
+        _isEnabled = configuration.IsEnabled;
+        _pollingIntervalMs = configuration.PollingIntervalMs;
+        _timeoutMs = configuration.TimeoutMs;
+        _reconnectIntervalSec = configuration.ReconnectIntervalSeconds;
+        _maxRetryCount = configuration.MaxRetryCount;
+        _autoReconnect = configuration.AutoReconnect;
+        _connectOnStartup = configuration.ConnectOnStartup;
+        DialogTitle = isEditMode ? "PLC 수정" : "PLC 추가";
+        HeaderTitle = DialogTitle;
+        HeaderSubtitle = isEditMode ? "선택된 PLC 설정 Prototype" : "PLC 설정 정적 Prototype";
         TestConnectionCommand = new RelayCommand(_ => CycleTestState());
         TestStateOptions = new ObservableCollection<PlcConnectionTestStateOption>
         {
@@ -34,6 +57,9 @@ public sealed class PlcEditorDialogViewModel : ViewModelBase
 
     public ObservableCollection<PlcConnectionTestStateOption> TestStateOptions { get; }
     public ICommand TestConnectionCommand { get; }
+    public string DialogTitle { get; }
+    public string HeaderTitle { get; }
+    public string HeaderSubtitle { get; }
 
     public string PlcName
     {
@@ -118,6 +144,22 @@ public sealed class PlcEditorDialogViewModel : ViewModelBase
     public string PollingIntervalSummary => $"{PollingIntervalMs} ms";
     public string AutoReconnectSummary => AutoReconnect ? "ON" : "OFF";
 
+    public PlcDashboardConfiguration ToConfiguration()
+        => new(
+            _plcId,
+            PlcName,
+            LineName,
+            Description,
+            IpAddress,
+            Port,
+            PollingIntervalMs,
+            TimeoutMs,
+            ReconnectIntervalSec,
+            MaxRetryCount,
+            AutoReconnect,
+            ConnectOnStartup,
+            IsEnabled);
+
     public string TestStateDisplayName => TestState switch
     {
         PlcConnectionTestState.Success => "연결 성공",
@@ -161,6 +203,22 @@ public sealed class PlcEditorDialogViewModel : ViewModelBase
             option.IsCurrent = option.State == TestState;
         }
     }
+
+    private static PlcDashboardConfiguration CreateDefaultPrototypeConfiguration()
+        => new(
+            "PLC-PROTOTYPE",
+            "롤러홀개공기",
+            "SF절단라인",
+            "절단기 보조 PLC",
+            "192.168.0.133",
+            2004,
+            200,
+            800,
+            5,
+            5,
+            AutoReconnect: true,
+            ConnectOnStartup: true,
+            IsEnabled: true);
 }
 
 public enum PlcConnectionTestState

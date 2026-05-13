@@ -4,12 +4,14 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using CAAutomationHub.Wpf.Adapters;
 using CAAutomationHub.Wpf.Models.Dashboard;
+using CAAutomationHub.Wpf.Services;
 
 namespace CAAutomationHub.Wpf.ViewModels;
 
 public sealed class DashboardViewModel : ViewModelBase, IDisposable
 {
     private readonly IRuntimeDashboardAdapter _adapter;
+    private readonly IPlcDashboardConfigurationService? _configurationService;
     private readonly DispatcherTimer _refreshTimer;
     private CommunicationTrendSetSnapshot _communicationTrendSet = CommunicationTrendSetSnapshot.Empty;
     private CommunicationTrendSnapshot _currentCommunicationTrend = CommunicationTrendSnapshot.Empty;
@@ -23,14 +25,26 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private int _trendErrorCount;
     private int _trendPointCount;
 
-    public DashboardViewModel() : this(new FakeDashboardRuntimeAdapter()) { }
+    public DashboardViewModel() : this(CreateDefaultFakeAdapter()) { }
 
     public DashboardViewModel(IRuntimeDashboardAdapter adapter)
+        : this(adapter, adapter as IPlcDashboardConfigurationService)
+    {
+    }
+
+    public DashboardViewModel(IRuntimeDashboardAdapter adapter, IPlcDashboardConfigurationService? configurationService)
     {
         _adapter = adapter;
+        _configurationService = configurationService;
         RefreshCommand = new RelayCommand(_ => LoadSnapshot());
         SelectPlcCommand = new RelayCommand(p => SelectPlc(p as PlcStatusCardViewModel));
         CloseDetailPaneCommand = new RelayCommand(_ => IsDetailPaneOpen = false);
+        EditSelectedPlcCommand = new RelayCommand(
+            p => EditSelectedPlc(p as PlcDashboardConfiguration),
+            p => _configurationService is not null && p is PlcDashboardConfiguration);
+        DeleteSelectedPlcCommand = new RelayCommand(
+            p => DeletePlc(p as string ?? SelectedPlc?.PlcId),
+            p => _configurationService is not null && (p as string ?? SelectedPlc?.PlcId) is not null);
         _refreshTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = TimeSpan.FromSeconds(1)
@@ -44,6 +58,8 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     public ICommand RefreshCommand { get; }
     public ICommand SelectPlcCommand { get; }
     public ICommand CloseDetailPaneCommand { get; }
+    public ICommand EditSelectedPlcCommand { get; }
+    public ICommand DeleteSelectedPlcCommand { get; }
     public int TotalCount { get; private set; }
     public int HealthyCount { get; private set; }
     public int WarningCount { get; private set; }
@@ -91,6 +107,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
             if (!SetProperty(ref _selectedPlc, value)) return;
             SyncSelectedCardStates();
             UpdateCurrentCommunicationTrend();
+            RaiseConfigurationCommandStatesChanged();
         }
     }
 
@@ -128,6 +145,20 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     private void ApplySnapshot(DashboardSnapshot snapshot)
     {
         _communicationTrendSet = snapshot.CommunicationTrend;
+        var snapshotPlcIds = snapshot.PlcCards.Select(card => card.PlcId).ToHashSet();
+
+        for (var index = PlcCards.Count - 1; index >= 0; index--)
+        {
+            if (snapshotPlcIds.Contains(PlcCards[index].Snapshot.PlcId)) continue;
+
+            PlcCards.RemoveAt(index);
+        }
+
+        if (SelectedPlc is not null && !snapshotPlcIds.Contains(SelectedPlc.Snapshot.PlcId))
+        {
+            SelectedPlc = null;
+            IsDetailPaneOpen = false;
+        }
 
         foreach (var card in snapshot.PlcCards)
         {
@@ -145,6 +176,11 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         {
             var selected = PlcCards.FirstOrDefault(plc => plc.Snapshot.PlcId == SelectedPlc.Snapshot.PlcId);
             if (selected is not null && !ReferenceEquals(selected, SelectedPlc)) SelectedPlc = selected;
+            if (selected is null)
+            {
+                SelectedPlc = null;
+                IsDetailPaneOpen = false;
+            }
         }
 
         SyncSelectedCardStates();
@@ -176,6 +212,32 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         _isDisposed = true;
         StopAutoRefresh();
         _refreshTimer.Tick -= OnRefreshTimerTick;
+    }
+
+    public PlcDashboardConfiguration? GetSelectedPlcConfiguration()
+        => SelectedPlc is null ? null : _configurationService?.GetPlcConfiguration(SelectedPlc.Snapshot.PlcId);
+
+    private void EditSelectedPlc(PlcDashboardConfiguration? configuration)
+    {
+        if (_configurationService is null || configuration is null) return;
+
+        _configurationService.UpdatePlc(configuration);
+        LoadSnapshot();
+    }
+
+    private void DeletePlc(string? plcId)
+    {
+        if (_configurationService is null || string.IsNullOrWhiteSpace(plcId)) return;
+
+        var wasSelected = SelectedPlc?.Snapshot.PlcId == plcId;
+        _configurationService.DeletePlc(plcId);
+        if (wasSelected)
+        {
+            SelectedPlc = null;
+            IsDetailPaneOpen = false;
+        }
+
+        LoadSnapshot();
     }
 
     private void OnRefreshTimerTick(object? sender, EventArgs e) => LoadSnapshot();
@@ -241,4 +303,12 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         RaisePropertyChanged(nameof(CongestedCount));
         RaisePropertyChanged(nameof(ErrorCount));
     }
+
+    private void RaiseConfigurationCommandStatesChanged()
+    {
+        if (EditSelectedPlcCommand is RelayCommand editCommand) editCommand.RaiseCanExecuteChanged();
+        if (DeleteSelectedPlcCommand is RelayCommand deleteCommand) deleteCommand.RaiseCanExecuteChanged();
+    }
+
+    private static FakeDashboardRuntimeAdapter CreateDefaultFakeAdapter() => new();
 }

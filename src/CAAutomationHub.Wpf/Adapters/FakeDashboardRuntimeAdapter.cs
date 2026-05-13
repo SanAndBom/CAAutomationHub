@@ -1,37 +1,39 @@
 using CAAutomationHub.Wpf.Models.Dashboard;
+using CAAutomationHub.Wpf.Services;
 
 namespace CAAutomationHub.Wpf.Adapters;
 
-public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter
+public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlcDashboardConfigurationService
 {
     private const int TrendPointCount = 360;
     private const double WarningThresholdMs = 250;
     private const double CongestedThresholdMs = 500;
     private const double ErrorThresholdMs = 750;
+    private readonly object _syncRoot = new();
+    private readonly List<PlcDashboardConfiguration> _configurations;
     private int _snapshotIndex;
+
+    public FakeDashboardRuntimeAdapter()
+        => _configurations = CreateDefaultConfigurations();
 
     public DashboardSnapshot GetSnapshot()
     {
         var tick = _snapshotIndex++;
         var jitter = (tick % 7) - 3;
         var congestionPhase = tick % 12;
+        List<PlcDashboardConfiguration> configurations;
 
-        var cards = new List<PlcCardSnapshot>
+        lock (_syncRoot)
         {
-            CreateCard(1, PlcConnectionState.Healthy, 38 + jitter, 134 + tick, 132 + tick, 0),
-            CreateCard(2, PlcConnectionState.Warning, 512 + (jitter * 9), 182 + tick, 176 + tick, tick % 10 == 0 ? 2 : 1),
-            CreateCard(3, GetCyclingState(congestionPhase), 94 + (jitter * 6), 148 + tick, 140 + tick, congestionPhase >= 8 ? 1 : 0),
-            CreateCard(4, PlcConnectionState.Error, 880 + (jitter * 12), 46 + tick, 39 + tick, 5 + (tick / 9)),
-            CreateCard(5, PlcConnectionState.Inactive, 0, 0, 0, 0),
-            CreateCard(6, PlcConnectionState.Healthy, 62 + (jitter * 4), 156 + tick, 154 + tick, 0),
-            CreateCard(7, PlcConnectionState.Healthy, 71 + (jitter * 5), 168 + tick, 165 + tick, 0),
-            CreateCard(8, PlcConnectionState.Warning, 248 + (jitter * 8), 116 + tick, 112 + tick, 2),
-            CreateCard(9, PlcConnectionState.Congested, 430 + (jitter * 10), 88 + tick, 81 + tick, 3),
-            CreateCard(10, PlcConnectionState.Healthy, 55 + (jitter * 4), 172 + tick, 170 + tick, 0)
-        };
+            configurations = _configurations.ToList();
+        }
+
+        var cards = configurations
+            .Select((configuration, index) => CreateCard(configuration, index + 1, congestionPhase, jitter, tick))
+            .ToArray();
 
         var health = new RuntimeHealthSnapshot(
-            cards.Count,
+            cards.Length,
             cards.Count(c => c.ConnectionState == PlcConnectionState.Healthy),
             cards.Count(c => c.ConnectionState == PlcConnectionState.Warning),
             cards.Count(c => c.ConnectionState == PlcConnectionState.Congested),
@@ -43,6 +45,59 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter
         return new DashboardSnapshot(health, cards, trend);
     }
 
+    public IReadOnlyList<PlcDashboardConfiguration> GetPlcConfigurations()
+    {
+        lock (_syncRoot)
+        {
+            return _configurations.ToArray();
+        }
+    }
+
+    public PlcDashboardConfiguration? GetPlcConfiguration(string plcId)
+    {
+        lock (_syncRoot)
+        {
+            return _configurations.FirstOrDefault(configuration => configuration.PlcId == plcId);
+        }
+    }
+
+    public void UpdatePlc(PlcDashboardConfiguration configuration)
+    {
+        lock (_syncRoot)
+        {
+            var index = _configurations.FindIndex(item => item.PlcId == configuration.PlcId);
+            if (index < 0) return;
+
+            _configurations[index] = configuration;
+        }
+    }
+
+    public void DeletePlc(string plcId)
+    {
+        lock (_syncRoot)
+        {
+            _configurations.RemoveAll(configuration => configuration.PlcId == plcId);
+        }
+    }
+
+    private static List<PlcDashboardConfiguration> CreateDefaultConfigurations()
+        => Enumerable.Range(1, 10)
+            .Select(index => new PlcDashboardConfiguration(
+                $"PLC-{index:00}",
+                $"Press Line PLC {index:00}",
+                $"Line-{((index - 1) % 4) + 1}",
+                $"Press line PLC {index:00} fake configuration",
+                $"192.168.0.{20 + index}",
+                2004,
+                500 + (index * 50),
+                800,
+                5,
+                5,
+                AutoReconnect: true,
+                ConnectOnStartup: true,
+                IsEnabled: index != 5))
+            .ToList();
+
     private static PlcConnectionState GetCyclingState(int phase)
     {
         if (phase < 4) return PlcConnectionState.Healthy;
@@ -51,24 +106,79 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter
     }
 
     private static PlcCardSnapshot CreateCard(
-        int index,
-        PlcConnectionState state,
-        int lastResponseMs,
-        int txPerMinute,
-        int rxPerMinute,
-        int errorCount)
-        => new(
-            $"PLC-{index:00}",
-            $"Press Line PLC {index:00}",
-            $"Line-{((index - 1) % 4) + 1}",
+        PlcDashboardConfiguration configuration,
+        int fallbackIndex,
+        int congestionPhase,
+        int jitter,
+        int tick)
+    {
+        var index = GetStableIndex(configuration.PlcId, fallbackIndex);
+        var state = configuration.IsEnabled ? GetState(index, congestionPhase) : PlcConnectionState.Inactive;
+        var lastResponseMs = state switch
+        {
+            PlcConnectionState.Healthy => index switch
+            {
+                1 => 38 + jitter,
+                6 => 62 + (jitter * 4),
+                7 => 71 + (jitter * 5),
+                10 => 55 + (jitter * 4),
+                _ => 48 + (index * 4) + jitter
+            },
+            PlcConnectionState.Warning => index == 2 ? 512 + (jitter * 9) : 248 + (jitter * 8),
+            PlcConnectionState.Congested => index == 9 ? 430 + (jitter * 10) : 94 + (jitter * 6),
+            PlcConnectionState.Error => 880 + (jitter * 12),
+            _ => 0
+        };
+        var txPerMinute = state switch
+        {
+            PlcConnectionState.Inactive => 0,
+            PlcConnectionState.Error => 46 + tick,
+            PlcConnectionState.Congested => index == 9 ? 88 + tick : 148 + tick,
+            PlcConnectionState.Warning => index == 2 ? 182 + tick : 116 + tick,
+            _ => 120 + (index * 6) + tick
+        };
+        var rxPerMinute = state == PlcConnectionState.Inactive ? 0 : Math.Max(0, txPerMinute - (index % 6));
+        var errorCount = state switch
+        {
+            PlcConnectionState.Error => 5 + (tick / 9),
+            PlcConnectionState.Warning => index == 2 && tick % 10 == 0 ? 2 : index == 2 ? 1 : 2,
+            PlcConnectionState.Congested => index == 3 && congestionPhase >= 8 ? 1 : index == 9 ? 3 : 0,
+            _ => 0
+        };
+
+        return new PlcCardSnapshot(
+            configuration.PlcId,
+            configuration.PlcName,
+            configuration.LineName,
             state,
-            $"192.168.0.{20 + index}",
-            2004,
-            500 + (index * 50),
+            configuration.IpAddress,
+            configuration.Port,
+            configuration.PollingIntervalMs,
             Math.Max(0, lastResponseMs),
             txPerMinute,
             rxPerMinute,
             errorCount);
+    }
+
+    private static PlcConnectionState GetState(int index, int congestionPhase)
+        => index switch
+        {
+            2 or 8 => PlcConnectionState.Warning,
+            3 => GetCyclingState(congestionPhase),
+            4 => PlcConnectionState.Error,
+            5 => PlcConnectionState.Inactive,
+            9 => PlcConnectionState.Congested,
+            _ => PlcConnectionState.Healthy
+        };
+
+    private static int GetStableIndex(string plcId, int fallbackIndex)
+    {
+        const string prefix = "PLC-";
+        return plcId.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            && int.TryParse(plcId[prefix.Length..], out var index)
+            ? index
+            : fallbackIndex;
+    }
 
     private static CommunicationTrendSetSnapshot CreateTrendSet(IReadOnlyList<PlcCardSnapshot> cards, int tick)
     {

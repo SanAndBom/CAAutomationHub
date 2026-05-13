@@ -1,5 +1,6 @@
 using CAAutomationHub.Wpf.Controls;
 using CAAutomationHub.Wpf.Models.Dashboard;
+using System.Windows.Media;
 
 namespace CAAutomationHub.Wpf.Tests.Controls;
 
@@ -45,5 +46,24 @@ public sealed class TrendRenderControlPolicyTests
             errorThresholdMs: 750);
 
         Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void GetSegmentRenderStyle_MakesHealthyLineVisibleWithoutChangingStatePolicy()
+    {
+        var overview = TrendRenderControl.GetSegmentRenderStyle(
+            PlcConnectionState.Healthy,
+            isWorst: false,
+            isOverview: true);
+        var selected = TrendRenderControl.GetSegmentRenderStyle(
+            PlcConnectionState.Healthy,
+            isWorst: false,
+            isOverview: false);
+
+        Assert.Equal(Color.FromRgb(96, 194, 255), overview.Color);
+        Assert.True(overview.Thickness >= 1.15);
+        Assert.True(overview.Opacity >= 0.52);
+        Assert.True(selected.Thickness >= overview.Thickness);
+        Assert.True(selected.Opacity > overview.Opacity);
     }
 }

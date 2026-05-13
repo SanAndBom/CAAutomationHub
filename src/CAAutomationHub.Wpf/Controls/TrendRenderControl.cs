@@ -122,6 +122,27 @@ public sealed class TrendRenderControl : FrameworkElement
         return PlcConnectionState.Healthy;
     }
 
+    public static TrendSegmentRenderStyle GetSegmentRenderStyle(PlcConnectionState segmentState, bool isWorst, bool isOverview)
+    {
+        var (color, thickness, opacity) = segmentState switch
+        {
+            PlcConnectionState.Healthy => (Color.FromRgb(96, 194, 255), 1.15, 0.52),
+            PlcConnectionState.Warning => (Color.FromRgb(255, 220, 86), 1.35, 0.68),
+            PlcConnectionState.Congested => (Color.FromRgb(255, 151, 45), 1.85, 0.86),
+            PlcConnectionState.Error => (Color.FromRgb(255, 82, 82), 2.3, 0.98),
+            _ => (Color.FromRgb(159, 174, 199), 1.0, 0.40)
+        };
+
+        if (!isOverview) opacity = Math.Min(1.0, opacity + 0.12);
+        if (isWorst)
+        {
+            thickness += 0.9;
+            opacity = Math.Min(1.0, opacity + 0.18);
+        }
+
+        return new TrendSegmentRenderStyle(color, thickness, opacity);
+    }
+
     protected override void OnRender(DrawingContext dc)
     {
         base.OnRender(dc);
@@ -186,23 +207,10 @@ public sealed class TrendRenderControl : FrameworkElement
 
     private Pen CreateSegmentPen(PlcConnectionState segmentState, bool isWorst, bool isOverview)
     {
-        var (color, thickness, opacity) = segmentState switch
-        {
-            PlcConnectionState.Healthy => (Color.FromRgb(80, 178, 255), 0.9, 0.30),
-            PlcConnectionState.Warning => (Color.FromRgb(255, 220, 86), 1.35, 0.68),
-            PlcConnectionState.Congested => (Color.FromRgb(255, 151, 45), 1.85, 0.86),
-            PlcConnectionState.Error => (Color.FromRgb(255, 82, 82), 2.3, 0.98),
-            _ => (Color.FromRgb(159, 174, 199), 1.0, 0.40)
-        };
-
-        if (!isOverview) opacity = Math.Min(1.0, opacity + 0.12);
-        if (isWorst)
-        {
-            thickness += 0.9;
-            opacity = Math.Min(1.0, opacity + 0.18);
-        }
-
-        var pen = new Pen(new SolidColorBrush(Color.FromArgb((byte)(opacity * 255), color.R, color.G, color.B)), thickness);
+        var style = GetSegmentRenderStyle(segmentState, isWorst, isOverview);
+        var pen = new Pen(
+            new SolidColorBrush(Color.FromArgb((byte)(style.Opacity * 255), style.Color.R, style.Color.G, style.Color.B)),
+            style.Thickness);
         if (segmentState == PlcConnectionState.Congested) pen.DashStyle = DashStyles.DashDot;
 
         return pen;
@@ -454,3 +462,5 @@ public sealed class TrendRenderControl : FrameworkElement
         return plot.Bottom - (plot.Height * ratio);
     }
 }
+
+public sealed record TrendSegmentRenderStyle(Color Color, double Thickness, double Opacity);

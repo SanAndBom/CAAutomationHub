@@ -40,6 +40,43 @@ public partial class DashboardView : UserControl
         dialog.ShowDialog();
     }
 
+    private void OnEditSelectedPlcRequested(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (DataContext is not DashboardViewModel viewModel) return;
+
+        var configuration = viewModel.GetSelectedPlcConfiguration();
+        if (configuration is null) return;
+
+        var dialog = new PlcEditorDialogWindow(configuration, isEditMode: true)
+        {
+            Owner = System.Windows.Window.GetWindow(this)
+        };
+
+        if (dialog.ShowDialog() == true && dialog.ResultConfiguration is not null)
+        {
+            viewModel.EditSelectedPlcCommand.Execute(dialog.ResultConfiguration);
+        }
+    }
+
+    private void OnDeleteSelectedPlcRequested(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (DataContext is not DashboardViewModel viewModel || viewModel.SelectedPlc is null) return;
+
+        var selected = viewModel.SelectedPlc;
+        var result = MessageBox.Show(
+            System.Windows.Window.GetWindow(this),
+            $"'{selected.PlcName}' PLC 카드를 삭제할까요?",
+            "PLC 삭제",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            viewModel.DeleteSelectedPlcCommand.Execute(selected.PlcId);
+        }
+    }
+
     private void OnPlcCardScrollViewerPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (IsFromScrollBar(e.OriginalSource as DependencyObject)) return;

@@ -1,18 +1,14 @@
 <Window x:Class="CAAutomationHub.Wpf.Dialogs.PlcEditorDialogWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="clr-namespace:CAAutomationHub.Wpf.ViewModels"
-        Title="PLC 추가"
         Width="980"
-        Height="760"
+        Height="880"
         MinWidth="900"
         MinHeight="680"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
-        Background="{StaticResource WindowBackgroundBrush}">
-    <Window.DataContext>
-        <vm:PlcEditorDialogViewModel />
-    </Window.DataContext>
+        Background="{StaticResource WindowBackgroundBrush}"
+        Title="{Binding DialogTitle}">
 
     <Window.Resources>
         <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
@@ -63,8 +59,8 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel>
-                <TextBlock Text="PLC 추가" Foreground="White" FontSize="28" FontWeight="SemiBold"/>
-                <TextBlock Text="PLC 설정 정적 Prototype" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
+                <TextBlock Text="{Binding HeaderTitle}" Foreground="White" FontSize="28" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding HeaderSubtitle}" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
             </StackPanel>
             <Border Grid.Column="1"
                     Background="#202A3E"

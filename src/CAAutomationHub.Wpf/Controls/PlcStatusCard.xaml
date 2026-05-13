@@ -32,7 +32,12 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0">
-                <TextBlock Text="{Binding PlcName}" FontSize="34" FontWeight="SemiBold" Foreground="White" TextAlignment="Center"/>
+                <TextBlock Text="{Binding PlcName}"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           Foreground="White"
+                           TextAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
                 <TextBlock Text="{Binding LineName}" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,10" TextAlignment="Center"/>
             </StackPanel>
 
