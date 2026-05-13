@@ -11,6 +11,8 @@
         Title="{Binding DialogTitle}">
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
         <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="18"/>
@@ -130,7 +132,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="Port" Style="{StaticResource FieldLabelStyle}"/>
-                                    <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldValueTextBoxStyle}"/>
+                                    <TextBox Text="{Binding PortText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldValueTextBoxStyle}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="4">
                                     <TextBlock Text="사용 여부" Style="{StaticResource FieldLabelStyle}"/>
@@ -163,22 +165,22 @@
 
                                 <StackPanel Grid.Row="0" Grid.Column="0">
                                     <TextBlock Text="Polling Interval" Style="{StaticResource FieldLabelStyle}"/>
-                                    <TextBox Text="{Binding PollingIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldValueTextBoxStyle}"/>
+                                    <TextBox Text="{Binding PollingIntervalMsText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldValueTextBoxStyle}"/>
                                     <TextBlock Text="ms" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Right" Margin="0,4,0,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Row="0" Grid.Column="2">
                                     <TextBlock Text="Timeout" Style="{StaticResource FieldLabelStyle}"/>
-                                    <TextBox Text="{Binding TimeoutMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldValueTextBoxStyle}"/>
+                                    <TextBox Text="{Binding TimeoutMsText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldValueTextBoxStyle}"/>
                                     <TextBlock Text="ms" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Right" Margin="0,4,0,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Row="0" Grid.Column="4">
                                     <TextBlock Text="재연결 간격" Style="{StaticResource FieldLabelStyle}"/>
-                                    <TextBox Text="{Binding ReconnectIntervalSec, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldValueTextBoxStyle}"/>
+                                    <TextBox Text="{Binding ReconnectIntervalSecText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldValueTextBoxStyle}"/>
                                     <TextBlock Text="sec" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Right" Margin="0,4,0,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Row="2" Grid.Column="0">
                                     <TextBlock Text="최대 재시도" Style="{StaticResource FieldLabelStyle}"/>
-                                    <TextBox Text="{Binding MaxRetryCount, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldValueTextBoxStyle}"/>
+                                    <TextBox Text="{Binding MaxRetryCountText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldValueTextBoxStyle}"/>
                                     <TextBlock Text="회" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Right" Margin="0,4,0,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Row="2" Grid.Column="2">
@@ -235,7 +237,7 @@
                         <TextBlock Text="IP 주소" Style="{StaticResource SummaryLabelStyle}"/>
                         <TextBlock Text="{Binding IpAddress}" Style="{StaticResource SummaryValueStyle}"/>
                         <TextBlock Text="Port" Style="{StaticResource SummaryLabelStyle}"/>
-                        <TextBlock Text="{Binding Port}" Style="{StaticResource SummaryValueStyle}"/>
+                        <TextBlock Text="{Binding PortText}" Style="{StaticResource SummaryValueStyle}"/>
                         <TextBlock Text="Polling Interval" Style="{StaticResource SummaryLabelStyle}"/>
                         <TextBlock Text="{Binding PollingIntervalSummary}" Style="{StaticResource SummaryValueStyle}"/>
                         <TextBlock Text="Auto Reconnect" Style="{StaticResource SummaryLabelStyle}"/>
@@ -247,21 +249,45 @@
             </StackPanel>
         </Grid>
 
-        <DockPanel Grid.Row="2" LastChildFill="False" Margin="0,14,0,0">
-            <Button Content="취소"
-                    Click="OnCancelClick"
-                    Style="{StaticResource SecondaryButtonStyle}"
-                    MinWidth="92"
-                    Margin="0,0,8,0"/>
-            <Button Content="테스트 연결"
-                    Command="{Binding TestConnectionCommand}"
-                    Style="{StaticResource SecondaryButtonStyle}"
-                    MinWidth="118"
-                    Margin="0,0,8,0"/>
-            <Button Content="저장"
-                    Click="OnSaveClick"
-                    Style="{StaticResource PrimaryButtonStyle}"
-                    MinWidth="92"/>
-        </DockPanel>
+        <StackPanel Grid.Row="2" Margin="0,14,0,0">
+            <Border Background="#3A2026"
+                    BorderBrush="#C6505E"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="12"
+                    Margin="0,0,0,10"
+                    Visibility="{Binding HasValidationErrors, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="저장할 수 없습니다" Foreground="#FFADB8" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <ItemsControl ItemsSource="{Binding ValidationErrors}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                    <TextBlock Text="- " Foreground="#FFADB8"/>
+                                    <TextBlock Text="{Binding}" Foreground="#FFADB8" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <DockPanel LastChildFill="False">
+                <Button Content="취소"
+                        Click="OnCancelClick"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        MinWidth="92"
+                        Margin="0,0,8,0"/>
+                <Button Content="테스트 연결"
+                        Command="{Binding TestConnectionCommand}"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        MinWidth="118"
+                        Margin="0,0,8,0"/>
+                <Button Content="저장"
+                        Click="OnSaveClick"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        MinWidth="92"/>
+            </DockPanel>
+        </StackPanel>
     </Grid>
 </Window>

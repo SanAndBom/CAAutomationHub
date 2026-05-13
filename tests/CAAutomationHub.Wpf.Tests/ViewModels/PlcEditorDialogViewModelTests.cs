@@ -67,7 +67,7 @@ public sealed class PlcEditorDialogViewModelTests
     }
 
     [Fact]
-    public void ToConfiguration_PreservesPlcIdAndReturnsEditedFields()
+    public void TryCreateConfiguration_WhenValid_PreservesPlcIdAndReturnsEditedFields()
     {
         var viewModel = new PlcEditorDialogViewModel(CreateConfiguration(), isEditMode: true)
         {
@@ -75,18 +75,20 @@ public sealed class PlcEditorDialogViewModelTests
             LineName = "Edited Line",
             Description = "Edited description",
             IpAddress = "10.1.2.3",
-            Port = 2600,
-            PollingIntervalMs = 700,
-            TimeoutMs = 1300,
-            ReconnectIntervalSec = 8,
-            MaxRetryCount = 4,
+            PortText = "2600",
+            PollingIntervalMsText = "700",
+            TimeoutMsText = "1300",
+            ReconnectIntervalSecText = "8",
+            MaxRetryCountText = "4",
             AutoReconnect = false,
             ConnectOnStartup = true,
             IsEnabled = true
         };
 
-        var result = viewModel.ToConfiguration();
+        var isValid = viewModel.TryCreateConfiguration(out var result);
 
+        Assert.True(isValid);
+        Assert.NotNull(result);
         Assert.Equal("PLC-42", result.PlcId);
         Assert.Equal("Edited PLC", result.PlcName);
         Assert.Equal("Edited Line", result.LineName);
@@ -100,6 +102,159 @@ public sealed class PlcEditorDialogViewModelTests
         Assert.False(result.AutoReconnect);
         Assert.True(result.ConnectOnStartup);
         Assert.True(result.IsEnabled);
+        Assert.False(viewModel.HasValidationErrors);
+        Assert.Empty(viewModel.ValidationErrors);
+    }
+
+    [Fact]
+    public void TryCreateConfiguration_WhenNameIsBlank_FailsAndDoesNotCreateConfiguration()
+    {
+        var viewModel = new PlcEditorDialogViewModel(CreateConfiguration(), isEditMode: false)
+        {
+            PlcName = "   "
+        };
+
+        var isValid = viewModel.TryCreateConfiguration(out var result);
+
+        Assert.False(isValid);
+        Assert.Null(result);
+        Assert.True(viewModel.HasValidationErrors);
+        Assert.Contains(viewModel.ValidationErrors, error => error.Contains("PLC 이름", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("999.1.1.1")]
+    [InlineData("2001:db8::1")]
+    public void TryCreateConfiguration_WhenIpAddressIsInvalid_Fails(string ipAddress)
+    {
+        var viewModel = new PlcEditorDialogViewModel(CreateConfiguration(), isEditMode: false)
+        {
+            IpAddress = ipAddress
+        };
+
+        var isValid = viewModel.TryCreateConfiguration(out var result);
+
+        Assert.False(isValid);
+        Assert.Null(result);
+        Assert.True(viewModel.HasValidationErrors);
+        Assert.Contains(viewModel.ValidationErrors, error => error.Contains("IP 주소", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("abc")]
+    [InlineData("0")]
+    [InlineData("65536")]
+    public void TryCreateConfiguration_WhenPortIsInvalid_Fails(string port)
+    {
+        var viewModel = new PlcEditorDialogViewModel(CreateConfiguration(), isEditMode: false)
+        {
+            PortText = port
+        };
+
+        var isValid = viewModel.TryCreateConfiguration(out var result);
+
+        Assert.False(isValid);
+        Assert.Null(result);
+        Assert.True(viewModel.HasValidationErrors);
+        Assert.Contains(viewModel.ValidationErrors, error => error.Contains("Port", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("abc")]
+    [InlineData("49")]
+    [InlineData("60001")]
+    public void TryCreateConfiguration_WhenPollingIntervalIsInvalid_Fails(string pollingInterval)
+    {
+        var viewModel = new PlcEditorDialogViewModel(CreateConfiguration(), isEditMode: false)
+        {
+            PollingIntervalMsText = pollingInterval
+        };
+
+        var isValid = viewModel.TryCreateConfiguration(out var result);
+
+        Assert.False(isValid);
+        Assert.Null(result);
+        Assert.True(viewModel.HasValidationErrors);
+        Assert.Contains(viewModel.ValidationErrors, error => error.Contains("Polling Interval", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("abc")]
+    [InlineData("49")]
+    [InlineData("60001")]
+    public void TryCreateConfiguration_WhenTimeoutIsInvalid_Fails(string timeout)
+    {
+        var viewModel = new PlcEditorDialogViewModel(CreateConfiguration(), isEditMode: false)
+        {
+            TimeoutMsText = timeout
+        };
+
+        var isValid = viewModel.TryCreateConfiguration(out var result);
+
+        Assert.False(isValid);
+        Assert.Null(result);
+        Assert.True(viewModel.HasValidationErrors);
+        Assert.Contains(viewModel.ValidationErrors, error => error.Contains("Timeout", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("0")]
+    [InlineData("3601")]
+    public void TryCreateConfiguration_WhenReconnectIntervalIsInvalid_Fails(string reconnectInterval)
+    {
+        var viewModel = new PlcEditorDialogViewModel(CreateConfiguration(), isEditMode: false)
+        {
+            ReconnectIntervalSecText = reconnectInterval
+        };
+
+        var isValid = viewModel.TryCreateConfiguration(out var result);
+
+        Assert.False(isValid);
+        Assert.Null(result);
+        Assert.True(viewModel.HasValidationErrors);
+        Assert.Contains(viewModel.ValidationErrors, error => error.Contains("Reconnect Interval", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("-1")]
+    [InlineData("101")]
+    public void TryCreateConfiguration_WhenMaxRetryCountIsInvalid_Fails(string maxRetryCount)
+    {
+        var viewModel = new PlcEditorDialogViewModel(CreateConfiguration(), isEditMode: false)
+        {
+            MaxRetryCountText = maxRetryCount
+        };
+
+        var isValid = viewModel.TryCreateConfiguration(out var result);
+
+        Assert.False(isValid);
+        Assert.Null(result);
+        Assert.True(viewModel.HasValidationErrors);
+        Assert.Contains(viewModel.ValidationErrors, error => error.Contains("Max Retry Count", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TryCreateConfiguration_WhenMaxRetryCountIsZero_Succeeds()
+    {
+        var viewModel = new PlcEditorDialogViewModel(CreateConfiguration(), isEditMode: false)
+        {
+            MaxRetryCountText = "0"
+        };
+
+        var isValid = viewModel.TryCreateConfiguration(out var result);
+
+        Assert.True(isValid);
+        Assert.NotNull(result);
+        Assert.Equal(0, result.MaxRetryCount);
+        Assert.False(viewModel.HasValidationErrors);
+        Assert.Empty(viewModel.ValidationErrors);
     }
 
     private static PlcDashboardConfiguration CreateConfiguration()

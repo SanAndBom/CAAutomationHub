@@ -28,11 +28,14 @@ public partial class PlcEditorDialogWindow : Window
 
     private void OnSaveClick(object sender, RoutedEventArgs e)
     {
-        if (DataContext is PlcEditorDialogViewModel viewModel)
+        if (DataContext is not PlcEditorDialogViewModel viewModel
+            || !viewModel.TryCreateConfiguration(out var configuration))
         {
-            ResultConfiguration = viewModel.ToConfiguration();
+            ResultConfiguration = null;
+            return;
         }
 
+        ResultConfiguration = configuration;
         DialogResult = true;
     }
 }

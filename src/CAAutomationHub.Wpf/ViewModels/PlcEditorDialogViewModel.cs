@@ -1,4 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
 using System.Windows.Input;
 using System.Windows.Media;
 using CAAutomationHub.Wpf.Models.Dashboard;
@@ -13,14 +16,15 @@ public sealed class PlcEditorDialogViewModel : ViewModelBase
     private string _lineName = "SF절단라인";
     private string _description = "절단기 보조 PLC";
     private string _ipAddress = "192.168.0.133";
-    private int _port = 2004;
+    private string _portText = "2004";
     private bool _isEnabled = true;
-    private int _pollingIntervalMs = 200;
-    private int _timeoutMs = 800;
-    private int _reconnectIntervalSec = 5;
-    private int _maxRetryCount = 5;
+    private string _pollingIntervalMsText = "200";
+    private string _timeoutMsText = "800";
+    private string _reconnectIntervalSecText = "5";
+    private string _maxRetryCountText = "5";
     private bool _autoReconnect = true;
     private bool _connectOnStartup = true;
+    private IReadOnlyList<string> _validationErrors = Array.Empty<string>();
 
     public PlcEditorDialogViewModel()
         : this(CreateDefaultPrototypeConfiguration(), isEditMode: false)
@@ -34,12 +38,12 @@ public sealed class PlcEditorDialogViewModel : ViewModelBase
         _lineName = configuration.LineName;
         _description = configuration.Description;
         _ipAddress = configuration.IpAddress;
-        _port = configuration.Port;
+        _portText = configuration.Port.ToString(CultureInfo.InvariantCulture);
         _isEnabled = configuration.IsEnabled;
-        _pollingIntervalMs = configuration.PollingIntervalMs;
-        _timeoutMs = configuration.TimeoutMs;
-        _reconnectIntervalSec = configuration.ReconnectIntervalSeconds;
-        _maxRetryCount = configuration.MaxRetryCount;
+        _pollingIntervalMsText = configuration.PollingIntervalMs.ToString(CultureInfo.InvariantCulture);
+        _timeoutMsText = configuration.TimeoutMs.ToString(CultureInfo.InvariantCulture);
+        _reconnectIntervalSecText = configuration.ReconnectIntervalSeconds.ToString(CultureInfo.InvariantCulture);
+        _maxRetryCountText = configuration.MaxRetryCount.ToString(CultureInfo.InvariantCulture);
         _autoReconnect = configuration.AutoReconnect;
         _connectOnStartup = configuration.ConnectOnStartup;
         DialogTitle = isEditMode ? "PLC 수정" : "PLC 추가";
@@ -60,6 +64,8 @@ public sealed class PlcEditorDialogViewModel : ViewModelBase
     public string DialogTitle { get; }
     public string HeaderTitle { get; }
     public string HeaderSubtitle { get; }
+    public IReadOnlyList<string> ValidationErrors => _validationErrors;
+    public bool HasValidationErrors => ValidationErrors.Count > 0;
 
     public string PlcName
     {
@@ -87,8 +93,17 @@ public sealed class PlcEditorDialogViewModel : ViewModelBase
 
     public int Port
     {
-        get => _port;
-        set => SetProperty(ref _port, value);
+        get => TryParseInteger(PortText, out var port) ? port : 0;
+    }
+
+    public string PortText
+    {
+        get => _portText;
+        set
+        {
+            if (!SetProperty(ref _portText, value)) return;
+            RaisePropertyChanged(nameof(Port));
+        }
     }
 
     public bool IsEnabled
@@ -99,30 +114,63 @@ public sealed class PlcEditorDialogViewModel : ViewModelBase
 
     public int PollingIntervalMs
     {
-        get => _pollingIntervalMs;
+        get => TryParseInteger(PollingIntervalMsText, out var pollingIntervalMs) ? pollingIntervalMs : 0;
+    }
+
+    public string PollingIntervalMsText
+    {
+        get => _pollingIntervalMsText;
         set
         {
-            if (!SetProperty(ref _pollingIntervalMs, value)) return;
+            if (!SetProperty(ref _pollingIntervalMsText, value)) return;
+            RaisePropertyChanged(nameof(PollingIntervalMs));
             RaisePropertyChanged(nameof(PollingIntervalSummary));
         }
     }
 
     public int TimeoutMs
     {
-        get => _timeoutMs;
-        set => SetProperty(ref _timeoutMs, value);
+        get => TryParseInteger(TimeoutMsText, out var timeoutMs) ? timeoutMs : 0;
+    }
+
+    public string TimeoutMsText
+    {
+        get => _timeoutMsText;
+        set
+        {
+            if (!SetProperty(ref _timeoutMsText, value)) return;
+            RaisePropertyChanged(nameof(TimeoutMs));
+        }
     }
 
     public int ReconnectIntervalSec
     {
-        get => _reconnectIntervalSec;
-        set => SetProperty(ref _reconnectIntervalSec, value);
+        get => TryParseInteger(ReconnectIntervalSecText, out var reconnectIntervalSec) ? reconnectIntervalSec : 0;
+    }
+
+    public string ReconnectIntervalSecText
+    {
+        get => _reconnectIntervalSecText;
+        set
+        {
+            if (!SetProperty(ref _reconnectIntervalSecText, value)) return;
+            RaisePropertyChanged(nameof(ReconnectIntervalSec));
+        }
     }
 
     public int MaxRetryCount
     {
-        get => _maxRetryCount;
-        set => SetProperty(ref _maxRetryCount, value);
+        get => TryParseInteger(MaxRetryCountText, out var maxRetryCount) ? maxRetryCount : 0;
+    }
+
+    public string MaxRetryCountText
+    {
+        get => _maxRetryCountText;
+        set
+        {
+            if (!SetProperty(ref _maxRetryCountText, value)) return;
+            RaisePropertyChanged(nameof(MaxRetryCount));
+        }
     }
 
     public bool AutoReconnect
@@ -141,24 +189,46 @@ public sealed class PlcEditorDialogViewModel : ViewModelBase
         set => SetProperty(ref _connectOnStartup, value);
     }
 
-    public string PollingIntervalSummary => $"{PollingIntervalMs} ms";
+    public string PollingIntervalSummary => $"{PollingIntervalMsText} ms";
     public string AutoReconnectSummary => AutoReconnect ? "ON" : "OFF";
 
-    public PlcDashboardConfiguration ToConfiguration()
-        => new(
+    public bool TryCreateConfiguration(out PlcDashboardConfiguration? configuration)
+    {
+        var errors = Validate(
+            out var plcName,
+            out var lineName,
+            out var description,
+            out var ipAddress,
+            out var port,
+            out var pollingIntervalMs,
+            out var timeoutMs,
+            out var reconnectIntervalSec,
+            out var maxRetryCount);
+
+        SetValidationErrors(errors);
+
+        if (errors.Count > 0)
+        {
+            configuration = null;
+            return false;
+        }
+
+        configuration = new PlcDashboardConfiguration(
             _plcId,
-            PlcName,
-            LineName,
-            Description,
-            IpAddress,
-            Port,
-            PollingIntervalMs,
-            TimeoutMs,
-            ReconnectIntervalSec,
-            MaxRetryCount,
+            plcName,
+            lineName,
+            description,
+            ipAddress,
+            port,
+            pollingIntervalMs,
+            timeoutMs,
+            reconnectIntervalSec,
+            maxRetryCount,
             AutoReconnect,
             ConnectOnStartup,
             IsEnabled);
+        return true;
+    }
 
     public string TestStateDisplayName => TestState switch
     {
@@ -203,6 +273,88 @@ public sealed class PlcEditorDialogViewModel : ViewModelBase
             option.IsCurrent = option.State == TestState;
         }
     }
+
+    private IReadOnlyList<string> Validate(
+        out string plcName,
+        out string lineName,
+        out string description,
+        out string ipAddress,
+        out int port,
+        out int pollingIntervalMs,
+        out int timeoutMs,
+        out int reconnectIntervalSec,
+        out int maxRetryCount)
+    {
+        var errors = new List<string>();
+        plcName = PlcName.Trim();
+        lineName = LineName.Trim();
+        description = Description.Trim();
+        ipAddress = IpAddress.Trim();
+
+        if (string.IsNullOrWhiteSpace(plcName))
+        {
+            errors.Add("PLC 이름은 필수입니다.");
+        }
+
+        if (string.IsNullOrWhiteSpace(ipAddress))
+        {
+            errors.Add("IP 주소는 필수입니다.");
+        }
+        else if (!IPAddress.TryParse(ipAddress, out var parsedAddress)
+                 || parsedAddress.AddressFamily != AddressFamily.InterNetwork)
+        {
+            errors.Add("IP 주소는 IPv4 형식이어야 합니다. 예: 192.168.0.133");
+        }
+
+        ValidateInteger(errors, "Port", PortText, 1, 65535, out port);
+        ValidateInteger(errors, "Polling Interval", PollingIntervalMsText, 50, 60000, out pollingIntervalMs, "ms");
+        ValidateInteger(errors, "Timeout", TimeoutMsText, 50, 60000, out timeoutMs, "ms");
+        ValidateInteger(errors, "Reconnect Interval", ReconnectIntervalSecText, 1, 3600, out reconnectIntervalSec, "sec");
+        ValidateInteger(errors, "Max Retry Count", MaxRetryCountText, 0, 100, out maxRetryCount);
+
+        return errors;
+    }
+
+    private void SetValidationErrors(IReadOnlyList<string> errors)
+    {
+        _validationErrors = errors;
+        RaisePropertyChanged(nameof(ValidationErrors));
+        RaisePropertyChanged(nameof(HasValidationErrors));
+    }
+
+    private static void ValidateInteger(
+        ICollection<string> errors,
+        string fieldName,
+        string text,
+        int minimum,
+        int maximum,
+        out int value,
+        string? unit = null)
+    {
+        value = 0;
+        var trimmed = text.Trim();
+
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            errors.Add($"{fieldName}은 필수입니다.");
+            return;
+        }
+
+        if (!TryParseInteger(trimmed, out value))
+        {
+            errors.Add($"{fieldName}은 정수로 입력해야 합니다.");
+            return;
+        }
+
+        if (value < minimum || value > maximum)
+        {
+            var suffix = string.IsNullOrWhiteSpace(unit) ? string.Empty : $" {unit}";
+            errors.Add($"{fieldName}은 {minimum} ~ {maximum}{suffix} 범위여야 합니다.");
+        }
+    }
+
+    private static bool TryParseInteger(string text, out int value)
+        => int.TryParse(text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out value);
 
     private static PlcDashboardConfiguration CreateDefaultPrototypeConfiguration()
         => new(
