@@ -28,6 +28,10 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -51,6 +55,23 @@
 
                 <TextBlock Grid.Row="5" Grid.Column="0" Text="Error Count" Foreground="{StaticResource TextMutedBrush}" Margin="0,8,0,0"/>
                 <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ErrorCount}" Foreground="White" Margin="0,8,0,0"/>
+
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="Current Sequence" Foreground="{StaticResource TextMutedBrush}" Margin="0,8,0,0"/>
+                <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding CurrentSequenceName}" Foreground="White" Margin="0,8,0,0"/>
+
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="Sequence Status" Foreground="{StaticResource TextMutedBrush}" Margin="0,8,0,0"/>
+                <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding CurrentSequenceStatusText}" Foreground="White" Margin="0,8,0,0"/>
+
+                <TextBlock Grid.Row="8" Grid.Column="0" Text="Elapsed" Foreground="{StaticResource TextMutedBrush}" Margin="0,8,0,0"/>
+                <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding CurrentSequenceElapsedText}" Foreground="White" Margin="0,8,0,0"/>
+
+                <TextBlock Grid.Row="9" Grid.Column="0" Text="Last Message" Foreground="{StaticResource TextMutedBrush}" Margin="0,8,0,0"/>
+                <TextBlock Grid.Row="9" Grid.Column="1"
+                           Text="{Binding LastSequenceMessage}"
+                           Foreground="White"
+                           Margin="0,8,0,0"
+                           MaxWidth="170"
+                           TextTrimming="CharacterEllipsis"/>
             </Grid>
 
             <Border Background="#1A2638" CornerRadius="4" Padding="10">

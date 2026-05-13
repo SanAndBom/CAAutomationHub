@@ -27,6 +27,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="56"/>
             </Grid.RowDefinitions>
@@ -92,7 +93,15 @@
                 <TextBlock Text="● 온라인" Foreground="LightGreen" FontSize="14" FontWeight="SemiBold"/>
             </Border>
 
-            <Grid Grid.Row="3" Margin="0,4,0,6">
+            <Border Grid.Row="3" Background="#1A2638" CornerRadius="4" Padding="7,3" Margin="0,0,0,7">
+                <TextBlock Text="{Binding CurrentSequenceText}"
+                           Foreground="White"
+                           FontSize="12"
+                           TextTrimming="CharacterEllipsis"
+                           TextAlignment="Center"/>
+            </Border>
+
+            <Grid Grid.Row="4" Margin="0,0,0,6">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -135,31 +144,55 @@
                 </TextBlock>
             </Grid>
 
-            <Border Grid.Row="4" Background="#1A2638" CornerRadius="4" Padding="8,4">
-                <DockPanel>
-                    <TextBlock Text="Mini Trend" Foreground="{StaticResource TextMutedBrush}" DockPanel.Dock="Left"/>
-                    <TextBlock Text="30분" Foreground="{StaticResource TextMutedBrush}" DockPanel.Dock="Right"/>
-                    <UniformGrid Rows="1" Columns="18" Margin="0,20,0,0" Height="20" VerticalAlignment="Bottom">
-                        <Rectangle Fill="#4DA6FF" Margin="1,8,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,3,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,10,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,5,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,6,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,2,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,11,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,9,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,4,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,7,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,1,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,5,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,9,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,4,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,11,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,6,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,3,1,0"/>
-                        <Rectangle Fill="#4DA6FF" Margin="1,8,1,0"/>
-                    </UniformGrid>
-                </DockPanel>
+            <Border Grid.Row="5" Background="#1A2638" CornerRadius="4" Padding="5,4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="응답 지연" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Left"/>
+                    <TextBlock Grid.Row="0" Text="5분" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                    <ItemsControl ItemsSource="{Binding SequenceResponseLatencyBuckets}"
+                                  Grid.Row="1"
+                                  Margin="0,2,0,0"
+                                  Height="24"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Bottom">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Rows="1" Columns="10"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Rectangle Grid.Column="0"
+                                               Width="4"
+                                               Height="{Binding StartBarHeight}"
+                                               Fill="#63D98A"
+                                               RadiusX="1"
+                                               RadiusY="1"
+                                               VerticalAlignment="Bottom"
+                                               HorizontalAlignment="Right"
+                                               Margin="0,0,0.5,0"/>
+                                    <Rectangle Grid.Column="1"
+                                               Width="4"
+                                               Height="{Binding CompletionBarHeight}"
+                                               Fill="#4DA6FF"
+                                               RadiusX="1"
+                                               RadiusY="1"
+                                               VerticalAlignment="Bottom"
+                                               HorizontalAlignment="Left"
+                                               Margin="0.5,0,0,0"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
             </Border>
         </Grid>
     </Border>

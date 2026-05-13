@@ -4,22 +4,35 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using CAAutomationHub.Wpf.Dialogs;
+using CAAutomationHub.Wpf.Models.Settings;
+using CAAutomationHub.Wpf.Services;
 using CAAutomationHub.Wpf.ViewModels;
 
 namespace CAAutomationHub.Wpf.Views;
 
 public partial class DashboardView : UserControl
 {
+    private readonly IDashboardLayoutSettingsService _layoutSettingsService;
     private Point _dragStartPoint;
     private double _dragStartHorizontalOffset;
+    private double _trendHeightBeforeResize;
+    private double _trendResizeVerticalChange;
     private bool _isTrackingCardDrag;
     private bool _isDraggingCards;
 
-    public DashboardView()
+    public DashboardView() : this(new DashboardLayoutSettingsService())
     {
+    }
+
+    public DashboardView(IDashboardLayoutSettingsService layoutSettingsService)
+    {
+        _layoutSettingsService = layoutSettingsService;
         InitializeComponent();
+        Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }
+
+    private void OnLoaded(object sender, System.Windows.RoutedEventArgs e) => ApplySavedLayoutSettings();
 
     private void OnUnloaded(object sender, System.Windows.RoutedEventArgs e)
     {
@@ -135,6 +148,27 @@ public partial class DashboardView : UserControl
         e.Handled = true;
     }
 
+    private void OnTrendHeightSplitterDragStarted(object sender, DragStartedEventArgs e)
+    {
+        _trendHeightBeforeResize = CommunicationTrendRow.ActualHeight > 0
+            ? CommunicationTrendRow.ActualHeight
+            : DashboardLayoutSettingsService.DefaultCommunicationTrendHeight;
+        _trendResizeVerticalChange = 0;
+    }
+
+    private void OnTrendHeightSplitterDragDelta(object sender, DragDeltaEventArgs e)
+    {
+        _trendResizeVerticalChange += e.VerticalChange;
+        ApplyCommunicationTrendHeight(_trendHeightBeforeResize - _trendResizeVerticalChange);
+    }
+
+    private void OnTrendHeightSplitterDragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        var totalVerticalChange = e.VerticalChange != 0 ? e.VerticalChange : _trendResizeVerticalChange;
+        var height = ApplyCommunicationTrendHeight(_trendHeightBeforeResize - totalVerticalChange);
+        _layoutSettingsService.Save(new DashboardLayoutSettings(height));
+    }
+
     private void ResetCardDragState()
     {
         if (PlcCardScrollViewer.IsMouseCaptured) PlcCardScrollViewer.ReleaseMouseCapture();
@@ -153,5 +187,18 @@ public partial class DashboardView : UserControl
         }
 
         return false;
+    }
+
+    private void ApplySavedLayoutSettings()
+    {
+        var settings = _layoutSettingsService.Load();
+        ApplyCommunicationTrendHeight(settings.CommunicationTrendHeight);
+    }
+
+    private double ApplyCommunicationTrendHeight(double requestedHeight)
+    {
+        var height = DashboardLayoutSettingsService.ClampCommunicationTrendHeight(requestedHeight);
+        CommunicationTrendRow.Height = new GridLength(height, GridUnitType.Pixel);
+        return height;
     }
 }

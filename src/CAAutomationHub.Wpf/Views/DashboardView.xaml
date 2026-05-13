@@ -70,7 +70,11 @@
         <Grid Grid.Row="1" HorizontalAlignment="Stretch">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="236"/>
+                <RowDefinition Height="8"/>
+                <RowDefinition x:Name="CommunicationTrendRow"
+                               Height="300"
+                               MinHeight="220"
+                               MaxHeight="420"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -78,7 +82,7 @@
                 <ColumnDefinition Width="{Binding DetailPaneColumnWidth}"/>
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource CardBorderStyle}" Padding="10,8,10,10" Margin="0,0,0,8" HorizontalAlignment="Stretch">
+            <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource CardBorderStyle}" Padding="10,6,10,6" HorizontalAlignment="Stretch">
                 <ScrollViewer x:Name="PlcCardScrollViewer"
                               HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Disabled"
@@ -107,7 +111,21 @@
                 </ScrollViewer>
             </Border>
 
-            <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource CardBorderStyle}" Padding="10" HorizontalAlignment="Stretch">
+            <GridSplitter Grid.Row="1"
+                          Grid.Column="0"
+                          Height="8"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          ResizeDirection="Rows"
+                          ResizeBehavior="PreviousAndNext"
+                          DragStarted="OnTrendHeightSplitterDragStarted"
+                          DragDelta="OnTrendHeightSplitterDragDelta"
+                          DragCompleted="OnTrendHeightSplitterDragCompleted"
+                          Background="#1F2B3D"
+                          ShowsPreview="False"
+                          Cursor="SizeNS"/>
+
+            <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource CardBorderStyle}" Padding="10" HorizontalAlignment="Stretch">
                 <controls:CommunicationTrendChart Trend="{Binding CurrentCommunicationTrend}"
                                                    AverageResponseMs="{Binding TrendAverageResponseMs}"
                                                    MaxResponseMs="{Binding TrendMaxResponseMs}"
@@ -115,7 +133,7 @@
                                                    PointCount="{Binding TrendPointCount}"/>
             </Border>
 
-            <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Style="{StaticResource CardBorderStyle}" Padding="10" Visibility="{Binding IsDetailPaneOpen, Converter={StaticResource BoolToVisibility}}">
+            <Border Grid.Row="0" Grid.RowSpan="3" Grid.Column="2" Style="{StaticResource CardBorderStyle}" Padding="10" Visibility="{Binding IsDetailPaneOpen, Converter={StaticResource BoolToVisibility}}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
