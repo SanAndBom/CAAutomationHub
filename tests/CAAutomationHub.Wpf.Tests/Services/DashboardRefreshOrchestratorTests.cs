@@ -118,6 +118,22 @@ public sealed class DashboardRefreshOrchestratorTests
     }
 
     [Fact]
+    public void MarkApplied_PreventsOlderSubmittedSnapshotFromBeingApplied()
+    {
+        var dispatcher = new RecordingUiDispatcher();
+        var applied = new List<DashboardSnapshot>();
+        var newer = CreateSnapshot(10);
+        var older = CreateSnapshot(9);
+        var orchestrator = new DashboardRefreshOrchestrator(dispatcher, applied.Add);
+
+        orchestrator.MarkApplied(newer);
+        orchestrator.SubmitSnapshot(older);
+
+        Assert.Equal(0, dispatcher.PostCount);
+        Assert.Empty(applied);
+    }
+
+    [Fact]
     public void DashboardRefreshOrchestrator_DoesNotExposeEventReceivedHandling()
     {
         var publicMembers = typeof(DashboardRefreshOrchestrator)

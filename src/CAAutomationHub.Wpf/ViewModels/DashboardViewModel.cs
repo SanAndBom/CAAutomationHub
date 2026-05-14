@@ -12,7 +12,9 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
 {
     private readonly IRuntimeDashboardAdapter _adapter;
     private readonly IPlcDashboardConfigurationService? _configurationService;
+    private readonly DashboardRefreshOrchestrator? _refreshOrchestrator;
     private readonly DispatcherTimer _refreshTimer;
+    private IRuntimeDashboardEventSource? _eventSource;
     private CommunicationTrendSetSnapshot _communicationTrendSet = CommunicationTrendSetSnapshot.Empty;
     private CommunicationTrendSnapshot _currentCommunicationTrend = CommunicationTrendSnapshot.Empty;
     private PlcStatusCardViewModel? _selectedPlc;
@@ -33,6 +35,14 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     }
 
     public DashboardViewModel(IRuntimeDashboardAdapter adapter, IPlcDashboardConfigurationService? configurationService)
+        : this(adapter, configurationService, null)
+    {
+    }
+
+    public DashboardViewModel(
+        IRuntimeDashboardAdapter adapter,
+        IPlcDashboardConfigurationService? configurationService,
+        IUiDispatcher? uiDispatcher)
     {
         _adapter = adapter;
         _configurationService = configurationService;
@@ -53,6 +63,14 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
             Interval = TimeSpan.FromSeconds(1)
         };
         _refreshTimer.Tick += OnRefreshTimerTick;
+        _eventSource = adapter as IRuntimeDashboardEventSource;
+        if (_eventSource is not null)
+        {
+            var dispatcher = uiDispatcher ?? new WpfUiDispatcher(Dispatcher.CurrentDispatcher);
+            _refreshOrchestrator = new DashboardRefreshOrchestrator(dispatcher, ApplySnapshot);
+            _eventSource.SnapshotChanged += OnSnapshotChanged;
+        }
+
         LoadSnapshot();
         StartAutoRefresh();
     }
@@ -145,6 +163,7 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
 
         var snapshot = _adapter.GetSnapshot();
         ApplySnapshot(snapshot);
+        _refreshOrchestrator?.MarkApplied(snapshot);
     }
 
     private void ApplySnapshot(DashboardSnapshot snapshot)
@@ -240,6 +259,11 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
         _isDisposed = true;
         StopAutoRefresh();
         _refreshTimer.Tick -= OnRefreshTimerTick;
+        if (_eventSource is not null)
+        {
+            _eventSource.SnapshotChanged -= OnSnapshotChanged;
+            _eventSource = null;
+        }
     }
 
     public PlcDashboardConfiguration? GetSelectedPlcConfiguration()
@@ -286,6 +310,13 @@ public sealed class DashboardViewModel : ViewModelBase, IDisposable
     }
 
     private void OnRefreshTimerTick(object? sender, EventArgs e) => LoadSnapshot();
+
+    private void OnSnapshotChanged(object? sender, DashboardSnapshotChangedEventArgs e)
+    {
+        if (_isDisposed) return;
+
+        _refreshOrchestrator?.SubmitSnapshot(e.Snapshot);
+    }
 
     private void SelectPlc(PlcStatusCardViewModel? plc)
     {

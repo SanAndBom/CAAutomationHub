@@ -46,6 +46,25 @@ public sealed class DashboardRefreshOrchestrator
         }
     }
 
+    public void MarkApplied(DashboardSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        lock (_syncRoot)
+        {
+            if (IsOlderThanLatestAccepted(snapshot))
+            {
+                return;
+            }
+
+            _latestAcceptedSnapshotTime = snapshot.Health.SnapshotTime;
+            if (_pendingSnapshot is not null && IsOlderThanLatestAccepted(_pendingSnapshot))
+            {
+                _pendingSnapshot = null;
+            }
+        }
+    }
+
     private void ApplyPendingSnapshot()
     {
         DashboardSnapshot? snapshot;
