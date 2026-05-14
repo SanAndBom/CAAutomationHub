@@ -20,7 +20,7 @@
 - AH-WPF-21: Dashboard Refresh Orchestrator 완료
 - AH-WPF-22: DashboardViewModel Event Refresh Wiring 완료
 - AH-WPF-23: Supervisor Boundary Review 완료
-- AH-WPF-24: WPF Runtime Bridge Current State Audit 완료, Closeout 작성 완료, 커밋 전 문서 보정 중
+- AH-WPF-24: WPF Runtime Bridge Current State Audit 완료 및 커밋 완료
 
 ## 3. 현재 아키텍처 요약
 
@@ -223,8 +223,8 @@ Push:
 ## 12. 현재 Git Anchor
 - AH-WPF-22 commit: `fb7bf1b`
 - AH-WPF-23 commit: `6f855f7`
-- AH-WPF-24: Current State Audit 완료, Closeout 작성 완료, 커밋 전 문서 보정 중
-- AH-WPF-24 audit context 문서 보정 전 working tree는 clean 상태였다.
+- AH-WPF-24 commit: `6eb1fa08c60e8b627ae6517c886f57cdbb6bbc23`
+- Working tree: clean
 
 ## 13. Notes
 - 이 문서는 최신 상태 요약이다. 상세 구현 이력은 `docs/harness/AH-WPF-xx.md`를 참고한다.
