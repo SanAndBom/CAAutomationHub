@@ -1,29 +1,37 @@
-# WPF Runtime Bridge Current State
+# WPF Runtime Bridge 현재 상태
 
-## 1. Purpose
-- This document summarizes the current state of the CAAutomationHub WPF Dashboard just before it moves from the Fake-based prototype into the Real Runtime Bridge.
-- It is a state anchor document for restoring the current design center when switching chat windows or entering the next Runtime work.
+## 1. 목적
+- 이 문서는 CAAutomationHub WPF Dashboard가 Fake 기반 Prototype에서 Real Runtime Bridge로 넘어가기 직전의 현재 상태를 요약한다.
+- 채팅방 전환이나 다음 Runtime 작업 진입 시 현재 설계 기준을 복원하기 위한 handoff anchor 문서다.
 
-## 2. Current Milestone
-- AH-WPF-09: Communication Trend Prototype complete
-- AH-WPF-10: PLC Card Edit/Delete complete
-- AH-WPF-11: PLC Add Actual Apply complete
-- AH-WPF-12: PlcEditorDialog Validation complete
-- AH-WPF-13: PLC Card Runtime Signal / Mini Trend complete
-- AH-WPF-14: Dashboard Source Refactor complete
-- AH-WPF-15: Runtime Bridge Contract Review complete
-- AH-WPF-16: Contracts Runtime Skeleton complete
-- AH-WPF-17: RuntimeSnapshot to DashboardSnapshot Mapper complete
-- AH-WPF-18: RuntimeDashboardAdapter Provider Skeleton complete
-- AH-WPF-19: Async/Event Contract Review complete
-- AH-WPF-20: Optional Runtime Adapter Interfaces complete
-- AH-WPF-21: Dashboard Refresh Orchestrator complete
-- AH-WPF-22: DashboardViewModel Event Refresh Wiring complete
-- AH-WPF-23: Supervisor Boundary Review complete
+## 2. 현재 마일스톤
+- AH-WPF-09: Communication Trend Prototype 완료
+- AH-WPF-10: PLC Card Edit/Delete 완료
+- AH-WPF-11: PLC Add Actual Apply 완료
+- AH-WPF-12: PlcEditorDialog Validation 완료
+- AH-WPF-13: PLC Card Runtime Signal / Mini Trend 완료
+- AH-WPF-14: Dashboard Source Refactor 완료
+- AH-WPF-15: Runtime Bridge Contract Review 완료
+- AH-WPF-16: Contracts Runtime Skeleton 완료
+- AH-WPF-17: RuntimeSnapshot to DashboardSnapshot Mapper 완료
+- AH-WPF-18: RuntimeDashboardAdapter Provider Skeleton 완료
+- AH-WPF-19: Async/Event Contract Review 완료
+- AH-WPF-20: Optional Runtime Adapter Interfaces 완료
+- AH-WPF-21: Dashboard Refresh Orchestrator 완료
+- AH-WPF-22: DashboardViewModel Event Refresh Wiring 완료
+- AH-WPF-23: Supervisor Boundary Review 완료
+- AH-WPF-24: WPF Runtime Bridge Current State Audit 완료, Closeout 작성 완료, 커밋 전 문서 보정 중
 
-## 3. Current Architecture Summary
+## 3. 현재 아키텍처 요약
 
-Current WPF dashboard snapshot flow:
+AH-WPF-24 Audit 결과:
+- Runtime 진입을 막는 코드 구조 불일치는 발견되지 않았다.
+- AH-RUNTIME-01 전에 필수 코드 정돈은 필요하지 않다.
+- 프로젝트 구조는 정상이다. Contracts, WPF, WPF.Tests가 존재하며 의도한 방향으로 참조된다.
+- 전체 테스트 기준선은 177 passed다.
+- 이 context anchor 보정 후 다음 구현 단계는 AH-RUNTIME-01을 권장한다.
+
+현재 WPF dashboard snapshot 흐름:
 
 ```text
 WPF UI
@@ -35,7 +43,7 @@ WPF UI
 -> DashboardSnapshot
 ```
 
-Real Runtime direction:
+Real Runtime 방향:
 
 ```text
 RuntimeDashboardAdapter
@@ -46,29 +54,29 @@ RuntimeDashboardAdapter
 -> Channel / Session / Transport / PLC
 ```
 
-## 4. Current WPF Dashboard Capabilities
-- PLC Card display
-- Add/Edit/Delete Fake configuration apply
+## 4. 현재 WPF Dashboard 기능
+- PLC Card 표시
+- Add/Edit/Delete Fake configuration 반영
 - PlcEditorDialog validation
 - Detail Pane
 - Communication Trend
-  - Overview: per-PLC RTT overlap
-  - Selected: selected PLC single RTT trend
+  - Overview: PLC별 RTT overlap
+  - Selected: 선택 PLC 단일 RTT trend
 - Card Runtime Signal
   - Current Sequence
-  - Last 5 minutes sequence response latency Mini Trend
+  - 최근 5분 sequence response latency Mini Trend
 - Realtime Event Log Prototype
 - Layout settings
   - Communication Trend height splitter
   - LocalAppData save/restore
-- Push refresh preparation
+- Push refresh 준비
   - `IRuntimeDashboardEventSource`
   - `DashboardRefreshOrchestrator`
   - `DashboardViewModel` `SnapshotChanged` wiring
 
-## 5. Runtime Bridge Contracts
+## 5. Runtime Bridge 계약
 
-Contracts project:
+Contracts 프로젝트:
 - `CAAutomationHub.Contracts`
 
 Runtime DTO:
@@ -79,7 +87,7 @@ Runtime DTO:
 - `RuntimeDashboardCommand`
 - `RuntimeDashboardCommandResult`
 
-Runtime states:
+Runtime 상태:
 - `PlcLinkState`
 - `PlcHealthSeverity`
 - `PlcPollingState`
@@ -93,24 +101,29 @@ Mapping:
 - `PlcHealthSeverity` -> `PlcConnectionState`
 - `RuntimeEvent` -> `RuntimeDashboardEvent`
 
-## 6. Confirmed Boundary Rules
-- WPF UI does not know `PlcChannel`.
-- WPF UI does not know `XgtSession`.
-- WPF UI does not know `TcpTransport`.
-- WPF UI does not know XGT Protocol DTOs.
-- WPF UI consumes only UI DTOs such as `DashboardSnapshot`, `PlcCardSnapshot`, and `RuntimeDashboardEvent`.
-- `RuntimeSnapshot` and `DashboardSnapshot` are separated.
-- `RuntimeDashboardAdapter` or Mapper translates `RuntimeSnapshot` into `DashboardSnapshot`.
-- `RuntimeDashboardAdapter` sees only the Supervisor or Provider boundary.
-- Supervisor is the Runtime Control Plane.
-- Channel owns connection, request, and recovery for one PLC.
-- Session owns XGT request/response serialization.
-- DriverCore owns XGT protocol, frame, and Transport.
+## 6. 확정된 경계 규칙
+- 현재 솔루션에는 `CAAutomationHub.Contracts`, `CAAutomationHub.Wpf`, `CAAutomationHub.Wpf.Tests`가 있다.
+- `CAAutomationHub.Wpf`는 `CAAutomationHub.Contracts`를 참조한다.
+- `CAAutomationHub.Contracts`는 WPF, Runtime, XGT, FakePlc 구현 프로젝트를 참조하지 않는다.
+- `CAAutomationHub.Runtime`은 아직 없다.
+- AH-RUNTIME-01에서는 Runtime 프로젝트를 만들 때 `CAAutomationHub.Contracts`만 참조하게 하고 `CAAutomationHub.Wpf`는 참조하지 않도록 해야 한다.
+- WPF UI는 `PlcChannel`을 모른다.
+- WPF UI는 `XgtSession`을 모른다.
+- WPF UI는 `TcpTransport`를 모른다.
+- WPF UI는 XGT Protocol DTO를 모른다.
+- WPF UI는 `DashboardSnapshot`, `PlcCardSnapshot`, `RuntimeDashboardEvent` 같은 UI DTO만 소비한다.
+- `RuntimeSnapshot`과 `DashboardSnapshot`은 분리되어 있다.
+- `RuntimeDashboardAdapter` 또는 Mapper가 `RuntimeSnapshot`을 `DashboardSnapshot`으로 변환한다.
+- `RuntimeDashboardAdapter`는 Supervisor 또는 Provider boundary만 본다.
+- Supervisor는 Runtime Control Plane이다.
+- Channel은 PLC 1개의 connection, request, recovery를 소유한다.
+- Session은 XGT request/response serialization을 소유한다.
+- DriverCore는 XGT protocol, frame, Transport를 소유한다.
 
-## 7. Current Refresh Strategy
+## 7. 현재 Refresh 전략
 
 Pull:
-- `DispatcherTimer` 1 second
+- `DispatcherTimer` 1초
 - `adapter.GetSnapshot()`
 - `ApplySnapshot()`
 
@@ -121,74 +134,102 @@ Push:
 - UI dispatcher marshal
 - `ApplySnapshot()`
 
-Important:
-- Timer refresh remains in place.
-- `SnapshotChanged` is a fast apply support path.
-- `EventReceived` is not connected yet.
-- `EventReceived` remains a separate Runtime Event Bridge candidate.
+중요:
+- Timer refresh는 유지한다.
+- `SnapshotChanged`는 빠른 apply 지원 경로다.
+- `EventReceived`는 아직 연결하지 않았다.
+- `EventReceived`는 별도 Runtime Event Bridge 후보로 남긴다.
 
-## 8. Supervisor Boundary Decision
-- A separate provider/bridge adapter sits between Supervisor and the WPF Adapter.
-- `IAutomationHubSupervisor` does not directly implement the WPF `IRuntimeSnapshotProvider`.
-- `RuntimeDashboardAdapter` should not deeply know `IAutomationHubSupervisor`.
-- Sync-over-async is prohibited.
-- After a real Runtime connection exists, `GetSnapshot()` should likely return the last successful cached `DashboardSnapshot`.
-- `RuntimeSnapshotChangedEventArgs` is needed.
-- `Revision` is useful long term, but is not added directly to `RuntimeSnapshot` or `DashboardSnapshot` yet.
+## 8. Supervisor Boundary 결정
+- Supervisor와 WPF Adapter 사이에는 별도 provider/bridge adapter를 둔다.
+- `IAutomationHubSupervisor`는 WPF의 `IRuntimeSnapshotProvider`를 직접 구현하지 않는다.
+- `RuntimeDashboardAdapter`는 `IAutomationHubSupervisor`를 깊게 알지 않는다.
+- sync-over-async는 금지한다.
+- 실제 Runtime 연결 이후 `GetSnapshot()`은 마지막 성공 `DashboardSnapshot` cache를 반환하는 방향이 유력하다.
+- `RuntimeSnapshotChangedEventArgs`가 필요하다.
+- `Revision`은 장기적으로 유용하지만 현재 `RuntimeSnapshot` 또는 `DashboardSnapshot`에 직접 추가하지 않는다.
+- AH-RUNTIME-01은 같은 snapshot에 대해 `RuntimeSnapshot.CapturedAt`과 `RuntimeHealthState.CapturedAt`이 일치해야 한다는 invariant를 명시해야 한다.
 
-## 9. Known Gaps Before Real Runtime
-- No `CAAutomationHub.Runtime` project
-- No `IAutomationHubSupervisor`
-- No `RuntimeSnapshotChangedEventArgs`
-- No Supervisor implementation
-- No RuntimeSnapshot provider bridge
-- No Runtime Event Bridge
-- No Runtime telemetry contract
-- No `XgtDriverCore` / `XgtChannelRunner` connection
-- No actual PLC connection
-- No `PollingScheduler`
-- No `BalanceController`
-- No Runtime command execution
+## 9. Real Runtime 전 알려진 Gap
+- `CAAutomationHub.Runtime` 프로젝트 없음
+- `IAutomationHubSupervisor` 없음
+- `RuntimeSnapshotChangedEventArgs` 없음
+- Supervisor 구현 없음
+- RuntimeSnapshot provider bridge 없음
+- Runtime Event Bridge 없음
+- Runtime telemetry contract 없음
+- `XgtDriverCore` / `XgtChannelRunner` 연결 없음
+- 실제 PLC 연결 없음
+- `PollingScheduler` 없음
+- `BalanceController` 없음
+- Runtime command execution 없음
 
-## 10. Next Recommended Steps
+## 10. 대체된 오래된 전제
+다음 오래된 전제는 현재 거짓이며 Runtime 진입 기준으로 사용하면 안 된다.
+- `DashboardViewModel`이 `PlcCards`를 clear하고 모든 card view model을 재생성한다.
+- `RuntimeHealthSnapshot`에 `InactiveCount`가 없다.
+- Card Mini Trend는 작은 RTT chart일 뿐이다.
+- `RuntimeDashboardAdapter`가 직접 빈 `DashboardSnapshot`을 반환한다.
+- Contracts 프로젝트가 없다.
+- `RuntimeSnapshot` -> `DashboardSnapshot` mapper가 없다.
+- `SnapshotChanged` push refresh가 `DashboardViewModel`에 연결되어 있지 않다.
+- `FakeDashboardRuntimeAdapter`가 trend와 runtime signal 생성을 모두 직접 담당한다.
+
+현재 기준:
+- `DashboardViewModel`은 PlcId 기준 remove/merge/update로 card 상태를 갱신한다.
+- WPF health snapshot과 Runtime health contract에 `InactiveCount`가 있다.
+- Card Mini Trend는 최근 5분 sequence response latency를 표현한다.
+- `RuntimeDashboardAdapter`는 `IRuntimeSnapshotProvider`와 `RuntimeDashboardSnapshotMapper`를 사용한다.
+- `CAAutomationHub.Contracts`가 있다.
+- `RuntimeDashboardSnapshotMapper`가 있다.
+- `DashboardViewModel`은 optional `IRuntimeDashboardEventSource`를 감지하고 `SnapshotChanged`를 `DashboardRefreshOrchestrator`로 연결한다.
+- Fake trend 생성은 `FakeCommunicationTrendFactory`로 분리되어 있다.
+- Fake runtime signal 생성은 `FakeRuntimeSignalFactory`로 분리되어 있다.
+
+## 11. 다음 권장 단계
 1. AH-RUNTIME-01: Runtime Project + Supervisor Interface Skeleton
-   - Create `CAAutomationHub.Runtime`.
-   - Reference Contracts.
-   - Add `IAutomationHubSupervisor`.
-   - Add `RuntimeSnapshotChangedEventArgs`.
-   - Do not connect actual PLCs.
+   - `CAAutomationHub.Runtime` 생성
+   - `CAAutomationHub.Contracts` 참조
+   - `IAutomationHubSupervisor` 추가
+   - `RuntimeSnapshotChangedEventArgs` 추가
+   - `RuntimeSnapshot.CapturedAt` / `RuntimeHealthState.CapturedAt` 일치 정책 정의
+   - Runtime 프로젝트가 `CAAutomationHub.Wpf`를 참조하지 않는지 검증
+   - 실제 PLC, XGT, FakePlc 연결 없음
 
 2. AH-RUNTIME-02: Supervisor Runtime Snapshot Provider Bridge
-   - Design the bridge that passes Supervisor snapshots into `RuntimeDashboardAdapter`.
-   - Review `IAsyncRuntimeSnapshotProvider`.
-   - Review sync `GetSnapshot()` cache policy.
+   - `IAsyncRuntimeSnapshotProvider` 검토
+   - sync `GetSnapshot()` cache 정책 정의
+   - sync-over-async 금지 유지
+   - Supervisor snapshot을 `RuntimeDashboardAdapter`로 전달하는 bridge 설계
 
-3. AH-WPF-24 or AH-RUNTIME-03: Runtime Event Bridge Skeleton
-   - Connect `RuntimeEventRaised` to `RuntimeDashboardEvent` to `RuntimeEventLogItem`.
-   - Define rolling buffer and UI marshal policy.
+3. AH-WPF-25 또는 AH-RUNTIME-03: Runtime Event Bridge Skeleton
+   - `RuntimeEventRaised`를 `RuntimeDashboardEvent`와 `RuntimeEventLogItem`으로 연결
+   - rolling buffer와 UI marshal 정책 정의
 
 4. AH-RUNTIME-04: InMemory Supervisor Skeleton
-   - Create `RuntimeSnapshot`.
-   - Raise `SnapshotChanged`.
-   - Do not connect actual PLCs.
+   - `RuntimeSnapshot` 생성
+   - `SnapshotChanged` 발생
+   - 실제 PLC 연결 없음
 
-5. AH-RUNTIME-05 and later:
+5. AH-RUNTIME-05 이후:
    - `ChannelRegistry`
-   - `XgtSession` / `XgtDriverCore` connection
+   - `XgtSession` / `XgtDriverCore` 연결
    - `TestConnection` / `HealthProbe`
    - `PollingScheduler`
    - `TelemetryBuffer`
    - Recovery policy
    - Balance policy
 
-## 11. Current Git Anchor
+## 12. 현재 Git Anchor
 - AH-WPF-22 commit: `fb7bf1b`
-- AH-WPF-23 closeout pending commit
-- Working tree should contain:
-  - `docs/harness/AH-WPF-23.md`
-  - `docs/context/WPF_RUNTIME_BRIDGE_CURRENT_STATE.md`
+- AH-WPF-23 commit: `6f855f7`
+- AH-WPF-24: Current State Audit 완료, Closeout 작성 완료, 커밋 전 문서 보정 중
+- AH-WPF-24 audit context 문서 보정 전 working tree는 clean 상태였다.
 
-## 12. Notes
-- This document is a latest-state summary. For detailed implementation history, see `docs/harness/AH-WPF-xx.md`.
-- If this document conflicts with older design documents, treat this document as the latest current-state anchor.
-- This document can be updated periodically after Runtime implementation begins.
+## 13. Notes
+- 이 문서는 최신 상태 요약이다. 상세 구현 이력은 `docs/harness/AH-WPF-xx.md`를 참고한다.
+- 이 문서는 AH-WPF-24 Audit 이후 최신 handoff anchor다.
+- 오래된 설계 문서와 충돌할 경우 이 문서를 최신 current-state anchor로 우선한다.
+- 과거 Closeout 문서와 충돌할 경우에도 이 문서를 최신 current-state anchor로 우선한다.
+- AH-RUNTIME-01 지시문은 이 문서를 기준으로 작성한다.
+- Runtime 구현이 시작되면 이 문서는 주기적으로 갱신될 수 있다.
