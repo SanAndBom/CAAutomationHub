@@ -3,7 +3,7 @@ using CAAutomationHub.Wpf.Models.Dashboard;
 
 namespace CAAutomationHub.Wpf.Adapters;
 
-public sealed class RuntimeDashboardAdapter : IRuntimeDashboardAdapter
+public sealed class RuntimeDashboardAdapter : IRuntimeDashboardAdapter, IAsyncRuntimeDashboardAdapter
 {
     private readonly IRuntimeSnapshotProvider _provider;
 
@@ -20,5 +20,11 @@ public sealed class RuntimeDashboardAdapter : IRuntimeDashboardAdapter
     {
         var runtimeSnapshot = _provider.GetSnapshot();
         return RuntimeDashboardSnapshotMapper.Map(runtimeSnapshot);
+    }
+
+    public Task<DashboardSnapshot> GetSnapshotAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(GetSnapshot());
     }
 }
