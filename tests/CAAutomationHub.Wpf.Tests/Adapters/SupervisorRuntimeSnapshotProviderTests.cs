@@ -38,6 +38,53 @@ public sealed class SupervisorRuntimeSnapshotProviderTests
     }
 
     [Fact]
+    public async Task RefreshAsync_UpdatesCacheWithSupervisorSnapshotAndReturnsCachedSnapshot()
+    {
+        var supervisor = new StubAutomationHubSupervisor();
+        using var provider = new SupervisorRuntimeSnapshotProvider(supervisor);
+        RuntimeSnapshot expected = CreateSnapshot(CapturedAt, totalPlcs: 3);
+        supervisor.SnapshotToReturn = expected;
+
+        RuntimeSnapshot refreshed = await provider.RefreshAsync(CancellationToken.None);
+
+        Assert.Same(expected, refreshed);
+        Assert.Same(expected, provider.GetSnapshot());
+        Assert.Equal(1, supervisor.GetSnapshotAsyncCallCount);
+    }
+
+    [Fact]
+    public async Task GetSnapshot_ReturnsCachedRuntimeSnapshotAfterRefreshAsync()
+    {
+        var supervisor = new StubAutomationHubSupervisor();
+        using var provider = new SupervisorRuntimeSnapshotProvider(supervisor);
+        RuntimeSnapshot expected = CreateSnapshot(CapturedAt, totalPlcs: 4);
+        supervisor.SnapshotToReturn = expected;
+
+        await provider.RefreshAsync(CancellationToken.None);
+
+        Assert.Same(expected, provider.GetSnapshot());
+        Assert.Equal(1, supervisor.GetSnapshotAsyncCallCount);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_KeepsExistingCacheAndRethrowsWhenSupervisorGetSnapshotAsyncFails()
+    {
+        var supervisor = new StubAutomationHubSupervisor();
+        using var provider = new SupervisorRuntimeSnapshotProvider(supervisor);
+        RuntimeSnapshot existing = CreateSnapshot(CapturedAt, totalPlcs: 2);
+        var failure = new InvalidOperationException("Snapshot refresh failed.");
+        supervisor.PublishSnapshot(existing);
+        supervisor.GetSnapshotAsyncException = failure;
+
+        InvalidOperationException actual = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => provider.RefreshAsync(CancellationToken.None));
+
+        Assert.Same(failure, actual);
+        Assert.Same(existing, provider.GetSnapshot());
+        Assert.Equal(1, supervisor.GetSnapshotAsyncCallCount);
+    }
+
+    [Fact]
     public void SnapshotChanged_UpdatesCachedRuntimeSnapshot()
     {
         var supervisor = new StubAutomationHubSupervisor();
@@ -47,6 +94,53 @@ public sealed class SupervisorRuntimeSnapshotProviderTests
         supervisor.PublishSnapshot(expected);
 
         Assert.Same(expected, provider.GetSnapshot());
+    }
+
+    [Fact]
+    public async Task RefreshAsync_DoesNotOverwriteNewerSnapshotWithOlderSupervisorSnapshot()
+    {
+        var supervisor = new StubAutomationHubSupervisor();
+        using var provider = new SupervisorRuntimeSnapshotProvider(supervisor);
+        RuntimeSnapshot newer = CreateSnapshot(UpdatedAt, totalPlcs: 5);
+        RuntimeSnapshot older = CreateSnapshot(CapturedAt, totalPlcs: 1);
+        supervisor.PublishSnapshot(newer);
+        supervisor.SnapshotToReturn = older;
+
+        RuntimeSnapshot refreshed = await provider.RefreshAsync(CancellationToken.None);
+
+        Assert.Same(newer, refreshed);
+        Assert.Same(newer, provider.GetSnapshot());
+    }
+
+    [Fact]
+    public async Task SnapshotChanged_DoesNotOverwriteNewerSnapshotWithOlderEventSnapshot()
+    {
+        var supervisor = new StubAutomationHubSupervisor();
+        using var provider = new SupervisorRuntimeSnapshotProvider(supervisor);
+        RuntimeSnapshot newer = CreateSnapshot(UpdatedAt, totalPlcs: 5);
+        RuntimeSnapshot older = CreateSnapshot(CapturedAt, totalPlcs: 1);
+        supervisor.SnapshotToReturn = newer;
+        await provider.RefreshAsync(CancellationToken.None);
+
+        supervisor.PublishSnapshot(older);
+
+        Assert.Same(newer, provider.GetSnapshot());
+    }
+
+    [Fact]
+    public async Task SameCapturedAtSnapshotAllowsLastArrivalToReplaceCache()
+    {
+        var supervisor = new StubAutomationHubSupervisor();
+        using var provider = new SupervisorRuntimeSnapshotProvider(supervisor);
+        RuntimeSnapshot first = CreateSnapshot(CapturedAt, totalPlcs: 1);
+        RuntimeSnapshot second = CreateSnapshot(CapturedAt, totalPlcs: 2);
+        supervisor.PublishSnapshot(first);
+        supervisor.SnapshotToReturn = second;
+
+        RuntimeSnapshot refreshed = await provider.RefreshAsync(CancellationToken.None);
+
+        Assert.Same(second, refreshed);
+        Assert.Same(second, provider.GetSnapshot());
     }
 
     [Fact]
@@ -62,6 +156,19 @@ public sealed class SupervisorRuntimeSnapshotProviderTests
         supervisor.PublishSnapshot(second);
 
         Assert.Same(first, provider.GetSnapshot());
+    }
+
+    [Fact]
+    public async Task RefreshAsync_DoesNotStartOrStopSupervisorLifecycle()
+    {
+        var supervisor = new StubAutomationHubSupervisor();
+        using var provider = new SupervisorRuntimeSnapshotProvider(supervisor);
+        supervisor.SnapshotToReturn = CreateSnapshot(CapturedAt, totalPlcs: 1);
+
+        await provider.RefreshAsync(CancellationToken.None);
+
+        Assert.Equal(0, supervisor.StartAsyncCallCount);
+        Assert.Equal(0, supervisor.StopAsyncCallCount);
     }
 
     [Fact]
@@ -101,16 +208,22 @@ public sealed class SupervisorRuntimeSnapshotProviderTests
         }
 
         public int GetSnapshotAsyncCallCount { get; private set; }
+        public int StartAsyncCallCount { get; private set; }
+        public int StopAsyncCallCount { get; private set; }
+        public RuntimeSnapshot SnapshotToReturn { get; set; } = RuntimeSnapshot.Empty;
+        public Exception? GetSnapshotAsyncException { get; set; }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            StartAsyncCallCount++;
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            StopAsyncCallCount++;
             return Task.CompletedTask;
         }
 
@@ -118,7 +231,12 @@ public sealed class SupervisorRuntimeSnapshotProviderTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             GetSnapshotAsyncCallCount++;
-            return Task.FromResult(RuntimeSnapshot.Empty);
+            if (GetSnapshotAsyncException is not null)
+            {
+                throw GetSnapshotAsyncException;
+            }
+
+            return Task.FromResult(SnapshotToReturn);
         }
 
         public Task<RuntimeDashboardCommandResult> ExecuteAsync(

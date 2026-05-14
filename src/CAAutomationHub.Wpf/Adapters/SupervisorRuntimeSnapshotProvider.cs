@@ -6,6 +6,7 @@ namespace CAAutomationHub.Wpf.Adapters;
 public sealed class SupervisorRuntimeSnapshotProvider : IRuntimeSnapshotProvider, IDisposable
 {
     private readonly IAutomationHubSupervisor _supervisor;
+    private readonly object _gate = new();
     private RuntimeSnapshot _currentSnapshot;
 
     public SupervisorRuntimeSnapshotProvider(IAutomationHubSupervisor supervisor)
@@ -17,7 +18,20 @@ public sealed class SupervisorRuntimeSnapshotProvider : IRuntimeSnapshotProvider
 
     public RuntimeSnapshot GetSnapshot()
     {
-        return _currentSnapshot;
+        lock (_gate)
+        {
+            return _currentSnapshot;
+        }
+    }
+
+    public async Task<RuntimeSnapshot> RefreshAsync(CancellationToken cancellationToken)
+    {
+        RuntimeSnapshot snapshot = await _supervisor.GetSnapshotAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        UpdateSnapshotIfLatest(snapshot);
+
+        return GetSnapshot();
     }
 
     public void Dispose()
@@ -27,6 +41,19 @@ public sealed class SupervisorRuntimeSnapshotProvider : IRuntimeSnapshotProvider
 
     private void OnSnapshotChanged(object? sender, RuntimeSnapshotChangedEventArgs e)
     {
-        _currentSnapshot = e.Snapshot;
+        UpdateSnapshotIfLatest(e.Snapshot);
+    }
+
+    private void UpdateSnapshotIfLatest(RuntimeSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        lock (_gate)
+        {
+            if (snapshot.CapturedAt >= _currentSnapshot.CapturedAt)
+            {
+                _currentSnapshot = snapshot;
+            }
+        }
     }
 }
