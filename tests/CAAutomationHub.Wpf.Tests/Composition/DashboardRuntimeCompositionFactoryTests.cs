@@ -29,7 +29,58 @@ public sealed class DashboardRuntimeCompositionFactoryTests
         Assert.Equal(1, callCount);
         Assert.Equal(DashboardRuntimeMode.Fake, composition.Mode);
         Assert.Same(adapter, composition.Adapter);
+        Assert.Same(DashboardRuntimeCapabilities.Editable, composition.Capabilities);
         Assert.Null(composition.Lifecycle);
+    }
+
+    [Fact]
+    public void DashboardRuntimeCapabilities_EditableAllowsConfigurationEditing()
+    {
+        DashboardRuntimeCapabilities capabilities = DashboardRuntimeCapabilities.Editable;
+
+        Assert.True(capabilities.CanAddPlc);
+        Assert.True(capabilities.CanEditPlc);
+        Assert.True(capabilities.CanDeletePlc);
+        Assert.True(capabilities.CanEditConfiguration);
+    }
+
+    [Fact]
+    public void DashboardRuntimeCapabilities_ReadOnlyDisallowsConfigurationEditing()
+    {
+        DashboardRuntimeCapabilities capabilities = DashboardRuntimeCapabilities.ReadOnly;
+
+        Assert.False(capabilities.CanAddPlc);
+        Assert.False(capabilities.CanEditPlc);
+        Assert.False(capabilities.CanDeletePlc);
+        Assert.False(capabilities.CanEditConfiguration);
+    }
+
+    [Theory]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public void DashboardRuntimeCapabilities_CanEditConfigurationIsTrueWhenAnyEditCapabilityIsTrue(
+        bool canAddPlc,
+        bool canEditPlc,
+        bool canDeletePlc)
+    {
+        var capabilities = new DashboardRuntimeCapabilities(
+            canAddPlc,
+            canEditPlc,
+            canDeletePlc);
+
+        Assert.True(capabilities.CanEditConfiguration);
+    }
+
+    [Fact]
+    public void DashboardRuntimeCapabilities_CanEditConfigurationIsFalseWhenAllEditCapabilitiesAreFalse()
+    {
+        var capabilities = new DashboardRuntimeCapabilities(
+            canAddPlc: false,
+            canEditPlc: false,
+            canDeletePlc: false);
+
+        Assert.False(capabilities.CanEditConfiguration);
     }
 
     [Fact]
@@ -50,6 +101,7 @@ public sealed class DashboardRuntimeCompositionFactoryTests
 
         Assert.Equal(DashboardRuntimeMode.InMemoryRuntime, composition.Mode);
         Assert.IsType<RuntimeDashboardAdapter>(composition.Adapter);
+        Assert.Same(DashboardRuntimeCapabilities.ReadOnly, composition.Capabilities);
         Assert.IsType<SupervisorRuntimeDashboardLifecycle>(composition.Lifecycle);
     }
 
@@ -81,7 +133,18 @@ public sealed class DashboardRuntimeCompositionFactoryTests
         Assert.Throws<ArgumentNullException>(
             () => new DashboardRuntimeComposition(
                 DashboardRuntimeMode.Fake,
-                adapter: null!));
+                adapter: null!,
+                DashboardRuntimeCapabilities.Editable));
+    }
+
+    [Fact]
+    public void DashboardRuntimeComposition_RequiresCapabilities()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new DashboardRuntimeComposition(
+                DashboardRuntimeMode.Fake,
+                new StubRuntimeDashboardAdapter(),
+                capabilities: null!));
     }
 
     [Fact]
@@ -93,6 +156,7 @@ public sealed class DashboardRuntimeCompositionFactoryTests
         var composition = new DashboardRuntimeComposition(
             DashboardRuntimeMode.InMemoryRuntime,
             adapter,
+            DashboardRuntimeCapabilities.ReadOnly,
             lifecycle,
             disposable);
 

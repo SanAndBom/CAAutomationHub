@@ -29,7 +29,8 @@ public sealed class DashboardRuntimeCompositionFactory
 
         return new DashboardRuntimeComposition(
             DashboardRuntimeMode.Fake,
-            adapter);
+            adapter,
+            DashboardRuntimeCapabilities.Editable);
     }
 
     private static DashboardRuntimeComposition CreateInMemoryRuntime()
@@ -42,6 +43,7 @@ public sealed class DashboardRuntimeCompositionFactory
         return new DashboardRuntimeComposition(
             DashboardRuntimeMode.InMemoryRuntime,
             adapter,
+            DashboardRuntimeCapabilities.ReadOnly,
             lifecycle,
             provider);
     }
