@@ -6,6 +6,86 @@ namespace CAAutomationHub.Runtime.Tests.Channels;
 public sealed class InMemoryRuntimePlcChannelTests
 {
     [Fact]
+    public void ReplaceState_ThrowsWhenStateIsNull()
+    {
+        var channel = new InMemoryRuntimePlcChannel(
+            plcId: "PLC-01",
+            plcName: "Cutting PLC");
+
+        var exception = Assert.Throws<ArgumentNullException>(
+            () => channel.ReplaceState(null!));
+
+        Assert.Equal("state", exception.ParamName);
+    }
+
+    [Fact]
+    public void ReplaceState_ThrowsWhenStatePlcIdDoesNotMatchChannelPlcId()
+    {
+        var channel = new InMemoryRuntimePlcChannel(
+            plcId: "PLC-01",
+            plcName: "Cutting PLC");
+        var replacement = CreateReplacementState(plcId: "PLC-02");
+
+        var exception = Assert.Throws<ArgumentException>(
+            () => channel.ReplaceState(replacement));
+
+        Assert.Equal("state", exception.ParamName);
+    }
+
+    [Fact]
+    public void ReplaceState_ReplacesInternalStateReturnedByGetState()
+    {
+        var capturedAt = new DateTimeOffset(2026, 5, 15, 10, 0, 0, TimeSpan.Zero);
+        var lastSuccessAt = new DateTimeOffset(2026, 5, 15, 9, 30, 0, TimeSpan.Zero);
+        var lastFailureAt = new DateTimeOffset(2026, 5, 15, 9, 45, 0, TimeSpan.Zero);
+        var channel = new InMemoryRuntimePlcChannel(
+            plcId: "PLC-01",
+            plcName: "Cutting PLC",
+            linkState: PlcLinkState.Online,
+            healthSeverity: PlcHealthSeverity.Healthy,
+            pollingState: PlcPollingState.Polling,
+            sequenceState: RuntimeSequenceState.Idle);
+        var replacement = CreateReplacementState(
+            linkState: PlcLinkState.Reconnecting,
+            healthSeverity: PlcHealthSeverity.Warning,
+            pollingState: PlcPollingState.Delayed,
+            sequenceState: RuntimeSequenceState.Waiting,
+            lastSuccessAt: lastSuccessAt,
+            lastFailureAt: lastFailureAt);
+
+        channel.ReplaceState(replacement);
+        ChannelRuntimeState state = channel.GetState(capturedAt);
+
+        Assert.Equal("PLC-01", state.PlcId);
+        Assert.Equal("Packaging PLC", state.PlcName);
+        Assert.Equal("Line-B", state.LineName);
+        Assert.False(state.IsEnabled);
+        Assert.Equal("10.0.0.42", state.IpAddress);
+        Assert.Equal(2100, state.Port);
+        Assert.Equal(PlcLinkState.Reconnecting, state.LinkState);
+        Assert.Equal(PlcHealthSeverity.Warning, state.HealthSeverity);
+        Assert.Equal(PlcPollingState.Delayed, state.PollingState);
+        Assert.Equal(RuntimeSequenceState.Waiting, state.SequenceState);
+        Assert.Equal(500, state.ConfiguredPollingIntervalMs);
+        Assert.Equal(750, state.EffectivePollingIntervalMs);
+        Assert.Equal(37, state.LastResponseMs);
+        Assert.Equal(4, state.ConsecutiveFailures);
+        Assert.Equal(2, state.ReconnectCount);
+        Assert.Equal(0.95, state.SuccessRate);
+        Assert.Equal(lastSuccessAt, state.LastSuccessAt);
+        Assert.Equal(lastFailureAt, state.LastFailureAt);
+        Assert.NotEqual(capturedAt, state.LastSuccessAt);
+        Assert.NotEqual(capturedAt, state.LastFailureAt);
+        Assert.Equal("Timeout", state.LastError);
+    }
+
+    [Fact]
+    public void IRuntimePlcChannel_DoesNotExposeReplaceState()
+    {
+        Assert.Null(typeof(IRuntimePlcChannel).GetMethod("ReplaceState"));
+    }
+
+    [Fact]
     public void GetState_ReturnsChannelRuntimeStateWithIdentity()
     {
         var channel = new InMemoryRuntimePlcChannel(
@@ -117,4 +197,33 @@ public sealed class InMemoryRuntimePlcChannelTests
         Assert.Equal(lastFailureAt, state.LastFailureAt);
         Assert.Equal("Timeout", state.LastError);
     }
+
+    private static InMemoryRuntimePlcChannelState CreateReplacementState(
+        string plcId = "PLC-01",
+        PlcLinkState linkState = PlcLinkState.Reconnecting,
+        PlcHealthSeverity healthSeverity = PlcHealthSeverity.Warning,
+        PlcPollingState pollingState = PlcPollingState.Delayed,
+        RuntimeSequenceState sequenceState = RuntimeSequenceState.Waiting,
+        DateTimeOffset? lastSuccessAt = null,
+        DateTimeOffset? lastFailureAt = null)
+        => new(
+            PlcId: plcId,
+            PlcName: "Packaging PLC",
+            LineName: "Line-B",
+            IsEnabled: false,
+            IpAddress: "10.0.0.42",
+            Port: 2100,
+            LinkState: linkState,
+            HealthSeverity: healthSeverity,
+            PollingState: pollingState,
+            SequenceState: sequenceState,
+            ConfiguredPollingIntervalMs: 500,
+            EffectivePollingIntervalMs: 750,
+            LastResponseMs: 37,
+            ConsecutiveFailures: 4,
+            ReconnectCount: 2,
+            SuccessRate: 0.95,
+            LastSuccessAt: lastSuccessAt,
+            LastFailureAt: lastFailureAt,
+            LastError: "Timeout");
 }

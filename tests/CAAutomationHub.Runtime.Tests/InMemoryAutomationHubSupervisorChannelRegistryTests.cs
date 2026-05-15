@@ -190,6 +190,62 @@ public sealed class InMemoryAutomationHubSupervisorChannelRegistryTests
     }
 
     [Fact]
+    public async Task ReplaceState_DoesNotPublishSnapshotUntilRefreshSnapshotAsyncIsCalled()
+    {
+        var registry = new RuntimeChannelRegistry();
+        var channel = new InMemoryRuntimePlcChannel(
+            plcId: "PLC-01",
+            plcName: "Cutting PLC",
+            linkState: PlcLinkState.Online,
+            healthSeverity: PlcHealthSeverity.Healthy);
+        registry.Add(channel);
+        var supervisor = new InMemoryAutomationHubSupervisor(registry);
+        var changes = new List<RuntimeSnapshotChangedEventArgs>();
+        supervisor.SnapshotChanged += (_, args) => changes.Add(args);
+
+        await supervisor.StartAsync(CancellationToken.None);
+        RuntimeSnapshot startedSnapshot = await supervisor.GetSnapshotAsync(CancellationToken.None);
+
+        channel.ReplaceState(new InMemoryRuntimePlcChannelState(
+            PlcId: "PLC-01",
+            PlcName: "Cutting PLC",
+            LineName: "Line-A",
+            IsEnabled: true,
+            IpAddress: "192.168.0.10",
+            Port: 2004,
+            LinkState: PlcLinkState.Reconnecting,
+            HealthSeverity: PlcHealthSeverity.Warning,
+            PollingState: PlcPollingState.Delayed,
+            SequenceState: RuntimeSequenceState.Waiting,
+            ConfiguredPollingIntervalMs: 500,
+            EffectivePollingIntervalMs: 750,
+            LastResponseMs: 42,
+            ConsecutiveFailures: 3,
+            ReconnectCount: 1,
+            SuccessRate: 0.9,
+            LastSuccessAt: new DateTimeOffset(2026, 5, 15, 8, 0, 0, TimeSpan.Zero),
+            LastFailureAt: new DateTimeOffset(2026, 5, 15, 8, 5, 0, TimeSpan.Zero),
+            LastError: "Timeout"));
+        RuntimeSnapshot cachedSnapshot = await supervisor.GetSnapshotAsync(CancellationToken.None);
+
+        Assert.Single(changes);
+        Assert.Same(startedSnapshot, cachedSnapshot);
+        ChannelRuntimeState cachedChannel = Assert.Single(cachedSnapshot.Channels);
+        Assert.Equal(PlcLinkState.Online, cachedChannel.LinkState);
+        Assert.Equal(PlcHealthSeverity.Healthy, cachedChannel.HealthSeverity);
+
+        RuntimeSnapshot refreshedSnapshot = await supervisor.RefreshSnapshotAsync(CancellationToken.None);
+
+        Assert.Equal(2, changes.Count);
+        Assert.Same(refreshedSnapshot, changes[1].Snapshot);
+        ChannelRuntimeState refreshedChannel = Assert.Single(refreshedSnapshot.Channels);
+        Assert.Equal(PlcLinkState.Reconnecting, refreshedChannel.LinkState);
+        Assert.Equal(PlcHealthSeverity.Warning, refreshedChannel.HealthSeverity);
+        Assert.Equal(PlcPollingState.Delayed, refreshedChannel.PollingState);
+        Assert.Equal(RuntimeSequenceState.Waiting, refreshedChannel.SequenceState);
+    }
+
+    [Fact]
     public async Task RefreshSnapshotAsync_IncrementsRevisionAfterStartPublish()
     {
         var registry = new RuntimeChannelRegistry();

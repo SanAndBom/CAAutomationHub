@@ -4,24 +4,8 @@ namespace CAAutomationHub.Runtime.Channels;
 
 public sealed class InMemoryRuntimePlcChannel : IRuntimePlcChannel
 {
-    private readonly string _plcName;
-    private readonly string _lineName;
-    private readonly bool _isEnabled;
-    private readonly string _ipAddress;
-    private readonly int _port;
-    private readonly PlcLinkState _linkState;
-    private readonly PlcHealthSeverity _healthSeverity;
-    private readonly PlcPollingState _pollingState;
-    private readonly RuntimeSequenceState _sequenceState;
-    private readonly int _configuredPollingIntervalMs;
-    private readonly int _effectivePollingIntervalMs;
-    private readonly int _lastResponseMs;
-    private readonly int _consecutiveFailures;
-    private readonly int _reconnectCount;
-    private readonly double _successRate;
-    private readonly string? _lastError;
-    private readonly DateTimeOffset? _lastSuccessAt;
-    private readonly DateTimeOffset? _lastFailureAt;
+    private readonly object _gate = new();
+    private InMemoryRuntimePlcChannelState _state;
 
     public InMemoryRuntimePlcChannel(
         string plcId,
@@ -54,51 +38,54 @@ public sealed class InMemoryRuntimePlcChannel : IRuntimePlcChannel
         ArgumentNullException.ThrowIfNull(ipAddress);
 
         PlcId = plcId;
-        _plcName = plcName;
-        _lineName = lineName;
-        _isEnabled = isEnabled;
-        _ipAddress = ipAddress;
-        _port = port;
-        _linkState = linkState;
-        _healthSeverity = healthSeverity;
-        _pollingState = pollingState;
-        _sequenceState = sequenceState;
-        _configuredPollingIntervalMs = configuredPollingIntervalMs;
-        _effectivePollingIntervalMs = effectivePollingIntervalMs;
-        _lastResponseMs = lastResponseMs;
-        _consecutiveFailures = consecutiveFailures;
-        _reconnectCount = reconnectCount;
-        _successRate = successRate;
-        _lastError = lastError;
-        _lastSuccessAt = lastSuccessAt;
-        _lastFailureAt = lastFailureAt;
+        _state = new InMemoryRuntimePlcChannelState(
+            PlcId: plcId,
+            PlcName: plcName,
+            LineName: lineName,
+            IsEnabled: isEnabled,
+            IpAddress: ipAddress,
+            Port: port,
+            LinkState: linkState,
+            HealthSeverity: healthSeverity,
+            PollingState: pollingState,
+            SequenceState: sequenceState,
+            ConfiguredPollingIntervalMs: configuredPollingIntervalMs,
+            EffectivePollingIntervalMs: effectivePollingIntervalMs,
+            LastResponseMs: lastResponseMs,
+            ConsecutiveFailures: consecutiveFailures,
+            ReconnectCount: reconnectCount,
+            SuccessRate: successRate,
+            LastSuccessAt: lastSuccessAt,
+            LastFailureAt: lastFailureAt,
+            LastError: lastError);
     }
 
     public string PlcId { get; }
+
+    public void ReplaceState(InMemoryRuntimePlcChannelState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+
+        if (!string.Equals(state.PlcId, PlcId, StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                $"Replacement state PLC id '{state.PlcId}' does not match channel PLC id '{PlcId}'.",
+                nameof(state));
+        }
+
+        lock (_gate)
+        {
+            _state = state;
+        }
+    }
 
     public ChannelRuntimeState GetState(DateTimeOffset capturedAt)
     {
         _ = capturedAt;
 
-        return new ChannelRuntimeState(
-            PlcId: PlcId,
-            PlcName: _plcName,
-            LineName: _lineName,
-            IsEnabled: _isEnabled,
-            IpAddress: _ipAddress,
-            Port: _port,
-            LinkState: _linkState,
-            HealthSeverity: _healthSeverity,
-            PollingState: _pollingState,
-            SequenceState: _sequenceState,
-            ConfiguredPollingIntervalMs: _configuredPollingIntervalMs,
-            EffectivePollingIntervalMs: _effectivePollingIntervalMs,
-            LastResponseMs: _lastResponseMs,
-            ConsecutiveFailures: _consecutiveFailures,
-            ReconnectCount: _reconnectCount,
-            SuccessRate: _successRate,
-            LastSuccessAt: _lastSuccessAt,
-            LastFailureAt: _lastFailureAt,
-            LastError: _lastError);
+        lock (_gate)
+        {
+            return _state.ToChannelRuntimeState();
+        }
     }
 }
