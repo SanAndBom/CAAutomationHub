@@ -62,6 +62,14 @@ public sealed class InMemoryRuntimePlcChannel : IWritableRuntimePlcChannel
 
     public string PlcId { get; }
 
+    public RuntimePlcChannelState GetRuntimeState()
+    {
+        lock (_gate)
+        {
+            return _state;
+        }
+    }
+
     public void ReplaceState(RuntimePlcChannelState state)
     {
         ArgumentNullException.ThrowIfNull(state);

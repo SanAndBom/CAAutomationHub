@@ -1,5 +1,6 @@
 using System.Reflection;
 using CAAutomationHub.Contracts.Runtime;
+using CAAutomationHub.Runtime;
 using CAAutomationHub.Runtime.Channels;
 
 namespace CAAutomationHub.Runtime.Tests.Channels;
@@ -30,6 +31,22 @@ public sealed class InMemoryRuntimePlcChannelTests
         Assert.NotNull(method);
         ParameterInfo parameter = Assert.Single(method.GetParameters());
         Assert.Equal(typeof(RuntimePlcChannelState), parameter.ParameterType);
+    }
+
+    [Fact]
+    public void IWritableRuntimePlcChannel_ExposesGetRuntimeStateWithRuntimePlcChannelState()
+    {
+        var method = typeof(IWritableRuntimePlcChannel).GetMethod("GetRuntimeState");
+
+        Assert.NotNull(method);
+        Assert.Empty(method.GetParameters());
+        Assert.Equal(typeof(RuntimePlcChannelState), method.ReturnType);
+    }
+
+    [Fact]
+    public void IRuntimePlcChannel_DoesNotExposeGetRuntimeState()
+    {
+        Assert.Null(typeof(IRuntimePlcChannel).GetMethod("GetRuntimeState"));
     }
 
     [Fact]
@@ -104,6 +121,108 @@ public sealed class InMemoryRuntimePlcChannelTests
         Assert.NotEqual(capturedAt, state.LastSuccessAt);
         Assert.NotEqual(capturedAt, state.LastFailureAt);
         Assert.Equal("Timeout", state.LastError);
+    }
+
+    [Fact]
+    public void GetRuntimeState_ReturnsCurrentRuntimePlcChannelState()
+    {
+        var lastSuccessAt = new DateTimeOffset(2026, 5, 15, 8, 30, 0, TimeSpan.Zero);
+        var channel = new InMemoryRuntimePlcChannel(
+            plcId: "PLC-01",
+            plcName: "Cutting PLC",
+            lineName: "Line-A",
+            isEnabled: false,
+            ipAddress: "192.168.0.10",
+            port: 2004,
+            linkState: PlcLinkState.Reconnecting,
+            healthSeverity: PlcHealthSeverity.Warning,
+            pollingState: PlcPollingState.Delayed,
+            sequenceState: RuntimeSequenceState.Waiting,
+            configuredPollingIntervalMs: 500,
+            effectivePollingIntervalMs: 750,
+            lastResponseMs: 37,
+            consecutiveFailures: 4,
+            reconnectCount: 2,
+            successRate: 0.95,
+            lastSuccessAt: lastSuccessAt,
+            lastError: "Timeout");
+
+        RuntimePlcChannelState state = channel.GetRuntimeState();
+
+        Assert.Equal("PLC-01", state.PlcId);
+        Assert.Equal("Cutting PLC", state.PlcName);
+        Assert.Equal("Line-A", state.LineName);
+        Assert.False(state.IsEnabled);
+        Assert.Equal("192.168.0.10", state.IpAddress);
+        Assert.Equal(2004, state.Port);
+        Assert.Equal(PlcLinkState.Reconnecting, state.LinkState);
+        Assert.Equal(PlcHealthSeverity.Warning, state.HealthSeverity);
+        Assert.Equal(PlcPollingState.Delayed, state.PollingState);
+        Assert.Equal(RuntimeSequenceState.Waiting, state.SequenceState);
+        Assert.Equal(500, state.ConfiguredPollingIntervalMs);
+        Assert.Equal(750, state.EffectivePollingIntervalMs);
+        Assert.Equal(37, state.LastResponseMs);
+        Assert.Equal(4, state.ConsecutiveFailures);
+        Assert.Equal(2, state.ReconnectCount);
+        Assert.Equal(0.95, state.SuccessRate);
+        Assert.Equal(lastSuccessAt, state.LastSuccessAt);
+        Assert.Null(state.LastFailureAt);
+        Assert.Equal("Timeout", state.LastError);
+    }
+
+    [Fact]
+    public void ReplaceState_ReplacesInternalStateReturnedByGetRuntimeState()
+    {
+        var channel = new InMemoryRuntimePlcChannel(
+            plcId: "PLC-01",
+            plcName: "Cutting PLC");
+        RuntimePlcChannelState replacement = CreateReplacementState();
+
+        channel.ReplaceState(replacement);
+        RuntimePlcChannelState state = channel.GetRuntimeState();
+
+        Assert.Same(replacement, state);
+    }
+
+    [Fact]
+    public void GetStateAndGetRuntimeState_ReturnSeparateStateContracts()
+    {
+        var capturedAt = new DateTimeOffset(2026, 5, 15, 10, 0, 0, TimeSpan.Zero);
+        var channel = new InMemoryRuntimePlcChannel(
+            plcId: "PLC-01",
+            plcName: "Cutting PLC");
+
+        RuntimePlcChannelState runtimeState = channel.GetRuntimeState();
+        ChannelRuntimeState publishState = channel.GetState(capturedAt);
+
+        Assert.IsType<RuntimePlcChannelState>(runtimeState);
+        Assert.IsType<ChannelRuntimeState>(publishState);
+        Assert.Equal(runtimeState.PlcId, publishState.PlcId);
+        Assert.Equal(runtimeState.PlcName, publishState.PlcName);
+    }
+
+    [Fact]
+    public async Task GetRuntimeState_DoesNotPublishSnapshot()
+    {
+        var registry = new RuntimeChannelRegistry();
+        var channel = new InMemoryRuntimePlcChannel(
+            plcId: "PLC-01",
+            plcName: "Cutting PLC");
+        registry.Add(channel);
+        var supervisor = new InMemoryAutomationHubSupervisor(registry);
+        var changes = new List<RuntimeSnapshotChangedEventArgs>();
+        supervisor.SnapshotChanged += (_, args) => changes.Add(args);
+
+        await supervisor.StartAsync(CancellationToken.None);
+        RuntimeSnapshot publishedSnapshot = await supervisor.GetSnapshotAsync(CancellationToken.None);
+        changes.Clear();
+
+        RuntimePlcChannelState runtimeState = channel.GetRuntimeState();
+        RuntimeSnapshot snapshotAfterReadback = await supervisor.GetSnapshotAsync(CancellationToken.None);
+
+        Assert.Equal("Cutting PLC", runtimeState.PlcName);
+        Assert.Empty(changes);
+        Assert.Same(publishedSnapshot, snapshotAfterReadback);
     }
 
     [Fact]

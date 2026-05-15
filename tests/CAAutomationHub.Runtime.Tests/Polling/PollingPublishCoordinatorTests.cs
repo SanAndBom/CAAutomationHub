@@ -492,6 +492,9 @@ public sealed class PollingPublishCoordinatorTests
 
         public string PlcId { get; }
 
+        public RuntimePlcChannelState GetRuntimeState()
+            => throw new InvalidOperationException($"Unable to read runtime state for {PlcId}.");
+
         public void ReplaceState(RuntimePlcChannelState state)
             => throw new InvalidOperationException($"Unable to replace state for {PlcId}.");
 
