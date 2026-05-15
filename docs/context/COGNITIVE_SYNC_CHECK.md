@@ -103,7 +103,31 @@
 - WPF가 Runtime polling 책임을 가져야 한다고 말함
 - Closeout 없이 완료/커밋을 권장함
 
-## 7. Recovery Protocol
+## 7. Cross-Chat Cognitive Sync Verification Routine
+
+새 채팅방의 Cognitive Sync 응답은 그 자체로 완료 판정이 아니다.
+필요하면 사용자는 새 채팅방 Handoff 이후 생성된 Cognitive Sync 응답을 이전 채팅방 또는 기준 채팅방에 되가져와 복원 정확도를 검증할 수 있다.
+
+기본 흐름:
+
+1. 새 채팅방에 Handoff 메시지를 입력한다.
+2. 새 채팅방은 Handoff 이후 Cognitive Sync 응답을 생성한다.
+3. 사용자는 그 응답을 이전 채팅방 또는 기준 채팅방에 되가져와 검증한다.
+4. 이전 채팅방 또는 기준 채팅방은 완료 상태, 금지 범위, 다음 목표, 경계 보존, commit / 문서 anchor 유지 여부를 기준으로 응답을 점검한다.
+5. 검증 결과를 PASS / PARTIAL / FAIL 정도로 표현한다.
+6. PARTIAL 또는 FAIL이면 Handoff 메시지나 context 문서를 보정한다.
+7. 보정된 내용을 다음 채팅방 전환에 반영해 전환 품질을 높인다.
+
+판정 기준:
+
+- PASS: 완료 상태, 금지 범위, 다음 목표, Runtime / WPF / Driver / FakePlc / Harness 경계, commit / 문서 anchor가 모두 유지됨.
+- PARTIAL: 핵심 방향은 맞지만 일부 완료 상태, 금지 범위, 다음 목표, anchor가 누락되거나 모호함.
+- FAIL: ContextPublisher 정책, Runtime shared execution path, Boundary, Harness, ACCEPT 의미, 다음 목표 중 하나 이상을 잘못 복원함.
+
+이 루틴은 장기 프로젝트 맥락의 cognitive checksum 역할을 한다.
+목적은 새 채팅방이 문서의 단편을 읽었는지가 아니라, 장기 계약의 연결선을 실제로 복원했는지 확인하는 것이다.
+
+## 8. Recovery Protocol
 
 복원 실패 시:
 
@@ -113,7 +137,7 @@
 4. Cognitive Check Questions 재수행
 5. 여전히 불일치하면 이전 긴 맥락 채팅으로 돌아와 보정
 
-## 8. New Chat Bootstrap Template
+## 9. New Chat Bootstrap Template
 
 새 채팅 첫 메시지 템플릿:
 
@@ -132,7 +156,7 @@ ContextPublisher 자동 publish는 현재 사용하지 않으며, docs/harness/A
 5. 다음 Runtime 목표
 ```
 
-## 9. Next Chat Exit Protocol
+## 10. Next Chat Exit Protocol
 
 다음 채팅도 무거워지면:
 

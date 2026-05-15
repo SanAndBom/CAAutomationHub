@@ -320,7 +320,20 @@ ACCEPT
 8. COGNITIVE_SYNC_CHECK.md 기준으로 복원 검증
 9. 실패 시 기존 긴 맥락 채팅방으로 돌아와 보정
 
-## 12. Codex Instruction Length Policy
+## 12. Cross-Chat Recovery Contract
+
+새 채팅방의 Cognitive Sync 응답은 장기 맥락 복원 결과물이며, 필요하면 이전 채팅방 또는 기준 채팅방으로 되가져와 검증한다.
+
+이 검증은 단순 문답 확인이 아니라 cognitive checksum이다.
+새 채팅방이 완료 상태, 금지 범위, 다음 목표, Runtime / WPF / Driver / FakePlc / Harness 경계, commit / 문서 anchor를 같은 의미로 복원했는지 확인한다.
+
+판정은 PASS / PARTIAL / FAIL 정도로 표현할 수 있다.
+PARTIAL 또는 FAIL이면 Handoff 메시지나 context 문서를 보정하고, 보정된 내용을 다음 전환에 반영한다.
+
+이 루틴은 Codex가 국소 문서 입자만 읽고 장기 계약의 연결선을 잃는 drift를 줄이기 위한 recovery contract다.
+Compact Mode / Full Context Mode / Delta Mode 정책을 바꾸지 않으며, ContextPublisher 자동 publish 재도입을 뜻하지 않는다.
+
+## 13. Codex Instruction Length Policy
 
 ### 1층: 고정 계약
 
@@ -362,7 +375,7 @@ Verification evidence 없는 완료 판정은 금지한다.
 불확실한 내용은 확인 필요로 표시한다.
 Codex Self-Check 판정은 작업자 자기검증이며, 최종 승인 여부는 사용자 검토 후 결정한다."
 
-## 13. Next Step
+## 14. Next Step
 
 다음 문서:
 
