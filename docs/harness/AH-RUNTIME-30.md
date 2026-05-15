@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-ACCEPT_WITH_CORRECTION
+ACCEPT
 
 ## 2. Scenario Goal
 
@@ -127,12 +127,12 @@ AH-RUNTIME-30의 목표는 future RuntimePlcChannelStateMapper 또는 polling or
 - WPF 변경 없음
 - XGT / FakePlc / scheduler / mapper 구현 없음
 
-## 9. Implementation Event Note
+## 9. ContextPublisher Note
 
 중요 기록:
 
 - AH-RUNTIME-30 코드 구현, 테스트, 참조 경계 검증은 통과함
-- Implementation 이벤트 publish는 완료되지 않음
+- 당시 Implementation 이벤트 publish는 완료되지 않았음
 - 최초 실행에서 AutomationHub.ContextPublisher.exe가 PATH에서 인식되지 않음
 - sibling build output으로 실행했을 때 이벤트 JSON은 생성됨
 - 생성된 pending event JSON:
@@ -146,12 +146,13 @@ AH-RUNTIME-30의 목표는 future RuntimePlcChannelStateMapper 또는 polling or
 판단:
 
 - 이는 AH-RUNTIME-30 코드/테스트 실패가 아니라 ContextPublisher 실행 경로 및 target section 계약 문제임
-- AH-RUNTIME-30 커밋에 ContextPublisher 보정을 섞지 않음
-- 별도 AH-DOCS/CONTEXT 작업으로 분리하는 것이 적절함
+- AH-RUNTIME-30-3 사용자 결정에 따라 ContextPublisher 자동 publish는 현재 사용하지 않음
+- 현재 기준에서 ContextPublisher 보정은 Runtime 진행 선결 조건이 아님
+- CAAutomationHub Runtime 작업의 primary historical record는 docs/harness/AH-RUNTIME-xx.md Closeout 문서임
 
 ## 10. ACCEPT Decision
 
-ACCEPT_WITH_CORRECTION
+ACCEPT
 
 이유:
 
@@ -160,7 +161,7 @@ ACCEPT_WITH_CORRECTION
 - IWritableRuntimePlcChannel.GetRuntimeState()와 InMemoryRuntimePlcChannel.GetRuntimeState()가 구현됨
 - GetState(capturedAt) / GetRuntimeState() 의미 분리가 테스트와 문서로 고정됨
 - IRuntimePlcChannel / Supervisor / Registry / Contracts / WPF 경계가 유지됨
-- 다만 Implementation 이벤트 publish가 ContextPublisher 경로/target section 문제로 실패했으므로 전체 closeout은 ACCEPT_WITH_CORRECTION으로 기록함
+- ContextPublisher 자동 publish는 AH-RUNTIME-30-3 사용자 결정에 따라 현재 사용하지 않으므로 보정 선결 조건에서 제외함
 
 ## 11. Risks / Follow-up Candidates
 
@@ -175,13 +176,12 @@ AH-RUNTIME-31 후보:
 
 별도 후속 후보:
 
-- AH-DOCS/CONTEXT: ContextPublisher repo root / target section contract 정비
-- ContextPublisher가 CAAutomationHub repo를 대상으로 동작하도록 경로/문서 계약 정리
-- docs/context/02_implementation.md / 03_verification.md 생성 여부 검토
-- WPF_RUNTIME_BRIDGE_CURRENT_STATE.md와 ContextPublisher target section 계약 정리
+- ContextPublisher 재도입 Boundary Review
+- 사용자가 별도 요청할 경우 CAAutomationHub context document contract 재검토
+- 사용자가 별도 요청할 경우 repo root / target section 설정화 검토
 
 ## 12. Next Step
 
 다음 단계는 새 채팅에서 AH-RUNTIME-31: ChannelPollingResult / RuntimePlcChannelStateMapper Skeleton Boundary Review 또는 구현 계획으로 이어가는 것이 적절합니다.
 
-다만 그 전에 현재 채팅에서는 AH-RUNTIME-30 Closeout 커밋 후 working tree clean을 확인하고, 새 채팅용 handoff 요약을 작성합니다.
+ContextPublisher 자동 publish는 현재 사용하지 않으며, 다시 필요해지면 사용자 별도 요청 후 재도입합니다.
