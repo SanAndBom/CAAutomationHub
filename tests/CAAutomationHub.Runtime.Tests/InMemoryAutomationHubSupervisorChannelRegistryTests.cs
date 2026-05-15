@@ -105,18 +105,28 @@ public sealed class InMemoryAutomationHubSupervisorChannelRegistryTests
     }
 
     [Fact]
-    public async Task StartAsync_PassesSnapshotCapturedAtToRegistryChannels()
+    public async Task StartAsync_PreservesChannelEventTimestampsWhileUsingSnapshotCapturedAt()
     {
+        var lastSuccessAt = new DateTimeOffset(2026, 1, 1, 8, 0, 0, TimeSpan.Zero);
+        var lastFailureAt = new DateTimeOffset(2026, 1, 1, 8, 5, 0, TimeSpan.Zero);
         var registry = new RuntimeChannelRegistry();
-        var channel = new RecordingRuntimePlcChannel("PLC-01");
+        var channel = new RecordingRuntimePlcChannel(
+            "PLC-01",
+            lastSuccessAt: lastSuccessAt,
+            lastFailureAt: lastFailureAt);
         registry.Add(channel);
         var supervisor = new InMemoryAutomationHubSupervisor(registry);
 
         await supervisor.StartAsync(CancellationToken.None);
         RuntimeSnapshot snapshot = await supervisor.GetSnapshotAsync(CancellationToken.None);
+        ChannelRuntimeState publishedChannel = Assert.Single(snapshot.Channels);
 
         Assert.Equal(snapshot.CapturedAt, channel.LastCapturedAt);
-        Assert.Equal(snapshot.CapturedAt, Assert.Single(snapshot.Channels).LastSuccessAt);
+        Assert.Equal(snapshot.CapturedAt, snapshot.Health.CapturedAt);
+        Assert.Equal(lastSuccessAt, publishedChannel.LastSuccessAt);
+        Assert.Equal(lastFailureAt, publishedChannel.LastFailureAt);
+        Assert.NotEqual(snapshot.CapturedAt, publishedChannel.LastSuccessAt);
+        Assert.NotEqual(snapshot.CapturedAt, publishedChannel.LastFailureAt);
     }
 
     [Fact]
@@ -139,10 +149,14 @@ public sealed class InMemoryAutomationHubSupervisorChannelRegistryTests
     public async Task RefreshSnapshotAsync_PublishesRegistryChannelStatesAndReturnsPublishedSnapshot()
     {
         var registry = new RuntimeChannelRegistry();
+        var lastSuccessAt = new DateTimeOffset(2026, 1, 1, 9, 0, 0, TimeSpan.Zero);
+        var lastFailureAt = new DateTimeOffset(2026, 1, 1, 9, 5, 0, TimeSpan.Zero);
         var channel = new RecordingRuntimePlcChannel(
             "PLC-01",
             linkState: PlcLinkState.Reconnecting,
-            healthSeverity: PlcHealthSeverity.Warning);
+            healthSeverity: PlcHealthSeverity.Warning,
+            lastSuccessAt: lastSuccessAt,
+            lastFailureAt: lastFailureAt);
         registry.Add(channel);
         var supervisor = new InMemoryAutomationHubSupervisor(registry);
         RuntimeSnapshotChangedEventArgs? change = null;
@@ -166,6 +180,10 @@ public sealed class InMemoryAutomationHubSupervisorChannelRegistryTests
         Assert.Equal("PLC-01", publishedChannel.PlcId);
         Assert.Equal(PlcLinkState.Reconnecting, publishedChannel.LinkState);
         Assert.Equal(PlcHealthSeverity.Warning, publishedChannel.HealthSeverity);
+        Assert.Equal(lastSuccessAt, publishedChannel.LastSuccessAt);
+        Assert.Equal(lastFailureAt, publishedChannel.LastFailureAt);
+        Assert.NotEqual(returnedSnapshot.CapturedAt, publishedChannel.LastSuccessAt);
+        Assert.NotEqual(returnedSnapshot.CapturedAt, publishedChannel.LastFailureAt);
         Assert.Equal(1, returnedSnapshot.Health.TotalPlcs);
         Assert.Equal(1, returnedSnapshot.Health.ReconnectingCount);
         Assert.Equal(1, returnedSnapshot.Health.WarningCount);
@@ -253,15 +271,21 @@ public sealed class InMemoryAutomationHubSupervisorChannelRegistryTests
     {
         private readonly PlcLinkState _linkState;
         private readonly PlcHealthSeverity _healthSeverity;
+        private readonly DateTimeOffset? _lastSuccessAt;
+        private readonly DateTimeOffset? _lastFailureAt;
 
         public RecordingRuntimePlcChannel(
             string plcId,
             PlcLinkState linkState = PlcLinkState.Online,
-            PlcHealthSeverity healthSeverity = PlcHealthSeverity.Healthy)
+            PlcHealthSeverity healthSeverity = PlcHealthSeverity.Healthy,
+            DateTimeOffset? lastSuccessAt = null,
+            DateTimeOffset? lastFailureAt = null)
         {
             PlcId = plcId;
             _linkState = linkState;
             _healthSeverity = healthSeverity;
+            _lastSuccessAt = lastSuccessAt;
+            _lastFailureAt = lastFailureAt;
         }
 
         public string PlcId { get; }
@@ -292,8 +316,8 @@ public sealed class InMemoryAutomationHubSupervisorChannelRegistryTests
                 ConsecutiveFailures: 0,
                 ReconnectCount: 0,
                 SuccessRate: 1.0,
-                LastSuccessAt: capturedAt,
-                LastFailureAt: null,
+                LastSuccessAt: _lastSuccessAt,
+                LastFailureAt: _lastFailureAt,
                 LastError: null);
         }
     }

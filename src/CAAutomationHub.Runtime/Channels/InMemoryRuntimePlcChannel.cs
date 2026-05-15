@@ -20,6 +20,8 @@ public sealed class InMemoryRuntimePlcChannel : IRuntimePlcChannel
     private readonly int _reconnectCount;
     private readonly double _successRate;
     private readonly string? _lastError;
+    private readonly DateTimeOffset? _lastSuccessAt;
+    private readonly DateTimeOffset? _lastFailureAt;
 
     public InMemoryRuntimePlcChannel(
         string plcId,
@@ -38,7 +40,9 @@ public sealed class InMemoryRuntimePlcChannel : IRuntimePlcChannel
         int consecutiveFailures = 0,
         int reconnectCount = 0,
         double successRate = 1.0,
-        string? lastError = null)
+        string? lastError = null,
+        DateTimeOffset? lastSuccessAt = null,
+        DateTimeOffset? lastFailureAt = null)
     {
         if (string.IsNullOrWhiteSpace(plcId))
         {
@@ -66,12 +70,16 @@ public sealed class InMemoryRuntimePlcChannel : IRuntimePlcChannel
         _reconnectCount = reconnectCount;
         _successRate = successRate;
         _lastError = lastError;
+        _lastSuccessAt = lastSuccessAt;
+        _lastFailureAt = lastFailureAt;
     }
 
     public string PlcId { get; }
 
     public ChannelRuntimeState GetState(DateTimeOffset capturedAt)
     {
+        _ = capturedAt;
+
         return new ChannelRuntimeState(
             PlcId: PlcId,
             PlcName: _plcName,
@@ -89,8 +97,8 @@ public sealed class InMemoryRuntimePlcChannel : IRuntimePlcChannel
             ConsecutiveFailures: _consecutiveFailures,
             ReconnectCount: _reconnectCount,
             SuccessRate: _successRate,
-            LastSuccessAt: capturedAt,
-            LastFailureAt: _lastError is null ? null : capturedAt,
+            LastSuccessAt: _lastSuccessAt,
+            LastFailureAt: _lastFailureAt,
             LastError: _lastError);
     }
 }

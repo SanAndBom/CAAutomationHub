@@ -62,12 +62,21 @@ public sealed class RuntimeChannelRegistryTests
     }
 
     [Fact]
-    public void GetStates_PassesCapturedAtToEachChannel()
+    public void GetStates_PassesCapturedAtWithoutChangingEventTimestamps()
     {
         var capturedAt = new DateTimeOffset(2026, 5, 15, 10, 1, 0, TimeSpan.Zero);
+        var firstLastSuccessAt = new DateTimeOffset(2026, 5, 15, 9, 40, 0, TimeSpan.Zero);
+        var firstLastFailureAt = new DateTimeOffset(2026, 5, 15, 9, 45, 0, TimeSpan.Zero);
+        var secondLastSuccessAt = new DateTimeOffset(2026, 5, 15, 9, 50, 0, TimeSpan.Zero);
         var registry = new RuntimeChannelRegistry();
-        var first = new StubRuntimePlcChannel("PLC-01");
-        var second = new StubRuntimePlcChannel("PLC-02");
+        var first = new StubRuntimePlcChannel(
+            "PLC-01",
+            firstLastSuccessAt,
+            firstLastFailureAt);
+        var second = new StubRuntimePlcChannel(
+            "PLC-02",
+            secondLastSuccessAt,
+            lastFailureAt: null);
         registry.Add(first);
         registry.Add(second);
 
@@ -75,14 +84,33 @@ public sealed class RuntimeChannelRegistryTests
 
         Assert.Equal(capturedAt, first.LastCapturedAt);
         Assert.Equal(capturedAt, second.LastCapturedAt);
-        Assert.All(states, state => Assert.Equal(capturedAt, state.LastSuccessAt));
+        Assert.Collection(
+            states,
+            state =>
+            {
+                Assert.Equal(firstLastSuccessAt, state.LastSuccessAt);
+                Assert.Equal(firstLastFailureAt, state.LastFailureAt);
+            },
+            state =>
+            {
+                Assert.Equal(secondLastSuccessAt, state.LastSuccessAt);
+                Assert.Null(state.LastFailureAt);
+            });
     }
 
     private sealed class StubRuntimePlcChannel : IRuntimePlcChannel
     {
-        public StubRuntimePlcChannel(string plcId)
+        private readonly DateTimeOffset? _lastSuccessAt;
+        private readonly DateTimeOffset? _lastFailureAt;
+
+        public StubRuntimePlcChannel(
+            string plcId,
+            DateTimeOffset? lastSuccessAt = null,
+            DateTimeOffset? lastFailureAt = null)
         {
             PlcId = plcId;
+            _lastSuccessAt = lastSuccessAt;
+            _lastFailureAt = lastFailureAt;
         }
 
         public string PlcId { get; }
@@ -110,8 +138,8 @@ public sealed class RuntimeChannelRegistryTests
                 ConsecutiveFailures: 0,
                 ReconnectCount: 0,
                 SuccessRate: 1.0,
-                LastSuccessAt: capturedAt,
-                LastFailureAt: null,
+                LastSuccessAt: _lastSuccessAt,
+                LastFailureAt: _lastFailureAt,
                 LastError: null);
         }
     }

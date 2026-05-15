@@ -26,22 +26,59 @@ public sealed class InMemoryRuntimePlcChannelTests
     }
 
     [Fact]
-    public void GetState_ReflectsCapturedAtAsLastSuccessAt()
+    public void GetState_DoesNotOverwriteLastSuccessAtWithCapturedAt()
+    {
+        var capturedAt = new DateTimeOffset(2026, 5, 15, 9, 1, 0, TimeSpan.Zero);
+        var lastSuccessAt = new DateTimeOffset(2026, 5, 15, 8, 45, 0, TimeSpan.Zero);
+        var channel = new InMemoryRuntimePlcChannel(
+            plcId: "PLC-01",
+            plcName: "Cutting PLC",
+            lastSuccessAt: lastSuccessAt);
+
+        ChannelRuntimeState state = channel.GetState(capturedAt);
+
+        Assert.Equal(lastSuccessAt, state.LastSuccessAt);
+        Assert.NotEqual(capturedAt, state.LastSuccessAt);
+    }
+
+    [Fact]
+    public void GetState_DoesNotOverwriteLastFailureAtWithCapturedAt()
+    {
+        var capturedAt = new DateTimeOffset(2026, 5, 15, 9, 1, 0, TimeSpan.Zero);
+        var lastFailureAt = new DateTimeOffset(2026, 5, 15, 8, 50, 0, TimeSpan.Zero);
+        var channel = new InMemoryRuntimePlcChannel(
+            plcId: "PLC-01",
+            plcName: "Cutting PLC",
+            lastFailureAt: lastFailureAt,
+            lastError: "Timeout");
+
+        ChannelRuntimeState state = channel.GetState(capturedAt);
+
+        Assert.Equal(lastFailureAt, state.LastFailureAt);
+        Assert.NotEqual(capturedAt, state.LastFailureAt);
+    }
+
+    [Fact]
+    public void GetState_KeepsDefaultEventTimestampsNullWhenUnset()
     {
         var capturedAt = new DateTimeOffset(2026, 5, 15, 9, 1, 0, TimeSpan.Zero);
         var channel = new InMemoryRuntimePlcChannel(
             plcId: "PLC-01",
-            plcName: "Cutting PLC");
+            plcName: "Cutting PLC",
+            lastError: "Timeout");
 
         ChannelRuntimeState state = channel.GetState(capturedAt);
 
-        Assert.Equal(capturedAt, state.LastSuccessAt);
+        Assert.Null(state.LastSuccessAt);
+        Assert.Null(state.LastFailureAt);
     }
 
     [Fact]
     public void GetState_ReturnsConfiguredRuntimeStateValues()
     {
         var capturedAt = new DateTimeOffset(2026, 5, 15, 9, 2, 0, TimeSpan.Zero);
+        var lastSuccessAt = new DateTimeOffset(2026, 5, 15, 8, 30, 0, TimeSpan.Zero);
+        var lastFailureAt = new DateTimeOffset(2026, 5, 15, 8, 40, 0, TimeSpan.Zero);
         var channel = new InMemoryRuntimePlcChannel(
             plcId: "PLC-02",
             plcName: "Press PLC",
@@ -59,6 +96,8 @@ public sealed class InMemoryRuntimePlcChannelTests
             consecutiveFailures: 4,
             reconnectCount: 2,
             successRate: 0.95,
+            lastSuccessAt: lastSuccessAt,
+            lastFailureAt: lastFailureAt,
             lastError: "Timeout");
 
         ChannelRuntimeState state = channel.GetState(capturedAt);
@@ -74,8 +113,8 @@ public sealed class InMemoryRuntimePlcChannelTests
         Assert.Equal(4, state.ConsecutiveFailures);
         Assert.Equal(2, state.ReconnectCount);
         Assert.Equal(0.95, state.SuccessRate);
-        Assert.Equal(capturedAt, state.LastSuccessAt);
-        Assert.Equal(capturedAt, state.LastFailureAt);
+        Assert.Equal(lastSuccessAt, state.LastSuccessAt);
+        Assert.Equal(lastFailureAt, state.LastFailureAt);
         Assert.Equal("Timeout", state.LastError);
     }
 }
