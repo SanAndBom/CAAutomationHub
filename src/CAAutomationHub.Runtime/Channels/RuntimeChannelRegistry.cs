@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using CAAutomationHub.Contracts.Runtime;
 
 namespace CAAutomationHub.Runtime.Channels;
@@ -24,6 +25,21 @@ public sealed class RuntimeChannelRegistry
             }
 
             _channelsByPlcId.Add(channel.PlcId, channel);
+        }
+    }
+
+    public bool TryGetChannel(string plcId, [NotNullWhen(true)] out IRuntimePlcChannel? channel)
+    {
+        ArgumentNullException.ThrowIfNull(plcId);
+
+        if (string.IsNullOrWhiteSpace(plcId))
+        {
+            throw new ArgumentException("PLC id must not be empty.", nameof(plcId));
+        }
+
+        lock (_gate)
+        {
+            return _channelsByPlcId.TryGetValue(plcId, out channel);
         }
     }
 

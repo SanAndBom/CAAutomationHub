@@ -36,6 +36,90 @@ public sealed class RuntimeChannelRegistryTests
     }
 
     [Fact]
+    public void TryGetChannel_ThrowsArgumentNullExceptionWhenPlcIdIsNull()
+    {
+        var registry = new RuntimeChannelRegistry();
+
+        Assert.Throws<ArgumentNullException>(() => registry.TryGetChannel(null!, out _));
+    }
+
+    [Fact]
+    public void TryGetChannel_ThrowsArgumentExceptionWhenPlcIdIsEmpty()
+    {
+        var registry = new RuntimeChannelRegistry();
+
+        Assert.Throws<ArgumentException>(() => registry.TryGetChannel(string.Empty, out _));
+    }
+
+    [Fact]
+    public void TryGetChannel_ThrowsArgumentExceptionWhenPlcIdIsWhiteSpace()
+    {
+        var registry = new RuntimeChannelRegistry();
+
+        Assert.Throws<ArgumentException>(() => registry.TryGetChannel("   ", out _));
+    }
+
+    [Fact]
+    public void TryGetChannel_ReturnsTrueAndAddedChannelReferenceWhenPlcIdExists()
+    {
+        var registry = new RuntimeChannelRegistry();
+        var channel = new StubRuntimePlcChannel("PLC-01");
+        registry.Add(channel);
+
+        bool found = registry.TryGetChannel("PLC-01", out IRuntimePlcChannel? foundChannel);
+
+        Assert.True(found);
+        Assert.Same(channel, foundChannel);
+    }
+
+    [Fact]
+    public void TryGetChannel_ReturnsFalseAndNullChannelWhenPlcIdIsMissing()
+    {
+        var registry = new RuntimeChannelRegistry();
+        registry.Add(new StubRuntimePlcChannel("PLC-01"));
+
+        bool found = registry.TryGetChannel("PLC-02", out IRuntimePlcChannel? foundChannel);
+
+        Assert.False(found);
+        Assert.Null(foundChannel);
+    }
+
+    [Fact]
+    public void TryGetChannel_UsesSameOrdinalCaseSensitivePolicyAsDuplicateDetection()
+    {
+        var registry = new RuntimeChannelRegistry();
+        var upperCaseChannel = new StubRuntimePlcChannel("PLC-01");
+        var lowerCaseChannel = new StubRuntimePlcChannel("plc-01");
+        registry.Add(upperCaseChannel);
+        registry.Add(lowerCaseChannel);
+
+        bool foundUpper = registry.TryGetChannel("PLC-01", out IRuntimePlcChannel? foundUpperChannel);
+        bool foundLower = registry.TryGetChannel("plc-01", out IRuntimePlcChannel? foundLowerChannel);
+        bool foundMixed = registry.TryGetChannel("Plc-01", out IRuntimePlcChannel? foundMixedChannel);
+
+        Assert.True(foundUpper);
+        Assert.Same(upperCaseChannel, foundUpperChannel);
+        Assert.True(foundLower);
+        Assert.Same(lowerCaseChannel, foundLowerChannel);
+        Assert.False(foundMixed);
+        Assert.Null(foundMixedChannel);
+    }
+
+    [Fact]
+    public void TryGetChannel_DoesNotReadChannelState()
+    {
+        var registry = new RuntimeChannelRegistry();
+        var channel = new StubRuntimePlcChannel("PLC-01");
+        registry.Add(channel);
+
+        bool found = registry.TryGetChannel("PLC-01", out IRuntimePlcChannel? foundChannel);
+
+        Assert.True(found);
+        Assert.Same(channel, foundChannel);
+        Assert.Equal(0, channel.GetStateCallCount);
+    }
+
+    [Fact]
     public void GetChannels_ReturnsSnapshotCopy()
     {
         var registry = new RuntimeChannelRegistry();
@@ -117,8 +201,11 @@ public sealed class RuntimeChannelRegistryTests
 
         public DateTimeOffset? LastCapturedAt { get; private set; }
 
+        public int GetStateCallCount { get; private set; }
+
         public ChannelRuntimeState GetState(DateTimeOffset capturedAt)
         {
+            GetStateCallCount++;
             LastCapturedAt = capturedAt;
 
             return new ChannelRuntimeState(
