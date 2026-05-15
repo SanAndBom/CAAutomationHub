@@ -16,6 +16,7 @@ public sealed class AutomationHubSupervisorContractTests
         Assert.Equal(
             typeof(Task<RuntimeDashboardCommandResult>),
             contract.GetMethod(nameof(IAutomationHubSupervisor.ExecuteAsync))?.ReturnType);
+        Assert.Null(contract.GetMethod("RefreshSnapshotAsync"));
 
         AssertRuntimeEventHandler<RuntimeSnapshotChangedEventArgs>(contract.GetEvent(nameof(IAutomationHubSupervisor.SnapshotChanged)));
         AssertRuntimeEventHandler<RuntimeEvent>(contract.GetEvent(nameof(IAutomationHubSupervisor.RuntimeEventRaised)));

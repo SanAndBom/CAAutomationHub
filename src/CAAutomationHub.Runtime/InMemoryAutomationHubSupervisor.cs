@@ -100,6 +100,37 @@ public sealed class InMemoryAutomationHubSupervisor : IAutomationHubSupervisor
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Refreshes and publishes the current Runtime snapshot from the in-memory
+    /// channel registry.
+    /// </summary>
+    /// <param name="cancellationToken">A token used to cancel the refresh operation.</param>
+    /// <returns>The published Runtime snapshot.</returns>
+    public Task<RuntimeSnapshot> RefreshSnapshotAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var capturedAt = DateTimeOffset.UtcNow;
+        IReadOnlyList<ChannelRuntimeState> channels = _channelRegistry.GetStates(capturedAt);
+        RuntimeSnapshot snapshot = CreateRuntimeSnapshot(capturedAt, channels);
+
+        long revision;
+        lock (_gate)
+        {
+            _currentSnapshot = snapshot;
+            revision = ++_revision;
+        }
+
+        SnapshotChanged?.Invoke(
+            this,
+            new RuntimeSnapshotChangedEventArgs(
+                snapshot,
+                occurredAt: snapshot.CapturedAt,
+                revision: revision));
+
+        return Task.FromResult(snapshot);
+    }
+
     /// <inheritdoc />
     public Task<RuntimeSnapshot> GetSnapshotAsync(CancellationToken cancellationToken)
     {

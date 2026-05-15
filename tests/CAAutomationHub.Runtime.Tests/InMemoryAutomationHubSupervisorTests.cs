@@ -69,6 +69,17 @@ public sealed class InMemoryAutomationHubSupervisorTests
     }
 
     [Fact]
+    public async Task RefreshSnapshotAsync_ThrowsWhenCancellationRequested()
+    {
+        var supervisor = new InMemoryAutomationHubSupervisor();
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => supervisor.RefreshSnapshotAsync(cts.Token));
+    }
+
+    [Fact]
     public async Task StopAsync_IsIdempotentAndKeepsLastSnapshotWithoutPublishingRuntimeEvents()
     {
         var supervisor = new InMemoryAutomationHubSupervisor();
