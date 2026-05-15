@@ -1,4 +1,5 @@
 using CAAutomationHub.Contracts.Runtime;
+using CAAutomationHub.Runtime.Channels;
 
 namespace CAAutomationHub.Runtime;
 
@@ -14,10 +15,22 @@ namespace CAAutomationHub.Runtime;
 public sealed class InMemoryAutomationHubSupervisor : IAutomationHubSupervisor
 {
     private readonly object _gate = new();
-    private RuntimeSnapshot _currentSnapshot = RuntimeSnapshot.Empty;
+    private readonly RuntimeChannelRegistry _channelRegistry;
+    private RuntimeSnapshot _currentSnapshot;
     private bool _started;
     private long _revision;
     private EventHandler<RuntimeEvent>? _runtimeEventRaised;
+
+    public InMemoryAutomationHubSupervisor()
+        : this(new RuntimeChannelRegistry())
+    {
+    }
+
+    public InMemoryAutomationHubSupervisor(RuntimeChannelRegistry channelRegistry)
+    {
+        _channelRegistry = channelRegistry ?? throw new ArgumentNullException(nameof(channelRegistry));
+        _currentSnapshot = RuntimeSnapshot.Empty;
+    }
 
     /// <inheritdoc />
     public event EventHandler<RuntimeSnapshotChangedEventArgs>? SnapshotChanged;
@@ -57,7 +70,9 @@ public sealed class InMemoryAutomationHubSupervisor : IAutomationHubSupervisor
             }
 
             _started = true;
-            snapshot = CreateEmptyRuntimeSnapshot(DateTimeOffset.UtcNow);
+            var capturedAt = DateTimeOffset.UtcNow;
+            IReadOnlyList<ChannelRuntimeState> channels = _channelRegistry.GetStates(capturedAt);
+            snapshot = CreateRuntimeSnapshot(capturedAt, channels);
             _currentSnapshot = snapshot;
             revision = ++_revision;
         }
@@ -120,22 +135,32 @@ public sealed class InMemoryAutomationHubSupervisor : IAutomationHubSupervisor
         return Task.FromResult(result);
     }
 
-    private static RuntimeSnapshot CreateEmptyRuntimeSnapshot(DateTimeOffset capturedAt)
+    private static RuntimeSnapshot CreateRuntimeSnapshot(
+        DateTimeOffset capturedAt,
+        IReadOnlyList<ChannelRuntimeState> channels)
     {
+        ChannelRuntimeState[] channelSnapshot = channels.ToArray();
+
         return new RuntimeSnapshot(
             capturedAt: capturedAt,
-            health: new RuntimeHealthState(
-                TotalPlcs: 0,
-                OnlineCount: 0,
-                ReconnectingCount: 0,
-                HealthyCount: 0,
-                WarningCount: 0,
-                CongestedCount: 0,
-                ErrorCount: 0,
-                InactiveCount: 0,
-                CapturedAt: capturedAt),
-            channels: Array.Empty<ChannelRuntimeState>(),
+            health: CreateRuntimeHealthState(capturedAt, channelSnapshot),
+            channels: channelSnapshot,
             recentEvents: Array.Empty<RuntimeEvent>());
     }
 
+    private static RuntimeHealthState CreateRuntimeHealthState(
+        DateTimeOffset capturedAt,
+        IReadOnlyCollection<ChannelRuntimeState> channels)
+    {
+        return new RuntimeHealthState(
+            TotalPlcs: channels.Count,
+            OnlineCount: channels.Count(channel => channel.LinkState == PlcLinkState.Online),
+            ReconnectingCount: channels.Count(channel => channel.LinkState == PlcLinkState.Reconnecting),
+            HealthyCount: channels.Count(channel => channel.HealthSeverity == PlcHealthSeverity.Healthy),
+            WarningCount: channels.Count(channel => channel.HealthSeverity == PlcHealthSeverity.Warning),
+            CongestedCount: channels.Count(channel => channel.HealthSeverity == PlcHealthSeverity.Congested),
+            ErrorCount: channels.Count(channel => channel.HealthSeverity == PlcHealthSeverity.Error),
+            InactiveCount: channels.Count(channel => channel.HealthSeverity == PlcHealthSeverity.Inactive),
+            CapturedAt: capturedAt);
+    }
 }
