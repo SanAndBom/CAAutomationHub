@@ -206,7 +206,9 @@ public sealed class InMemoryAutomationHubSupervisorChannelRegistryTests
         await supervisor.StartAsync(CancellationToken.None);
         RuntimeSnapshot startedSnapshot = await supervisor.GetSnapshotAsync(CancellationToken.None);
 
-        channel.ReplaceState(new InMemoryRuntimePlcChannelState(
+        IWritableRuntimePlcChannel writable = Assert.IsAssignableFrom<IWritableRuntimePlcChannel>(channel);
+
+        writable.ReplaceState(new RuntimePlcChannelState(
             PlcId: "PLC-01",
             PlcName: "Cutting PLC",
             LineName: "Line-A",

@@ -1,3 +1,4 @@
+using System.Reflection;
 using CAAutomationHub.Contracts.Runtime;
 using CAAutomationHub.Runtime.Channels;
 
@@ -5,6 +6,32 @@ namespace CAAutomationHub.Runtime.Tests.Channels;
 
 public sealed class InMemoryRuntimePlcChannelTests
 {
+    [Fact]
+    public void InMemoryRuntimePlcChannel_ImplementsWritableRuntimePlcChannel()
+    {
+        var channel = new InMemoryRuntimePlcChannel(
+            plcId: "PLC-01",
+            plcName: "Cutting PLC");
+
+        Assert.IsAssignableFrom<IWritableRuntimePlcChannel>(channel);
+    }
+
+    [Fact]
+    public void IWritableRuntimePlcChannel_ExtendsReadOnlyRuntimePlcChannel()
+    {
+        Assert.True(typeof(IRuntimePlcChannel).IsAssignableFrom(typeof(IWritableRuntimePlcChannel)));
+    }
+
+    [Fact]
+    public void IWritableRuntimePlcChannel_ExposesReplaceStateWithRuntimePlcChannelState()
+    {
+        var method = typeof(IWritableRuntimePlcChannel).GetMethod("ReplaceState");
+
+        Assert.NotNull(method);
+        ParameterInfo parameter = Assert.Single(method.GetParameters());
+        Assert.Equal(typeof(RuntimePlcChannelState), parameter.ParameterType);
+    }
+
     [Fact]
     public void ReplaceState_ThrowsWhenStateIsNull()
     {
@@ -198,7 +225,7 @@ public sealed class InMemoryRuntimePlcChannelTests
         Assert.Equal("Timeout", state.LastError);
     }
 
-    private static InMemoryRuntimePlcChannelState CreateReplacementState(
+    private static RuntimePlcChannelState CreateReplacementState(
         string plcId = "PLC-01",
         PlcLinkState linkState = PlcLinkState.Reconnecting,
         PlcHealthSeverity healthSeverity = PlcHealthSeverity.Warning,

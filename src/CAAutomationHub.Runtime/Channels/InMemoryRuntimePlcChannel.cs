@@ -2,10 +2,10 @@ using CAAutomationHub.Contracts.Runtime;
 
 namespace CAAutomationHub.Runtime.Channels;
 
-public sealed class InMemoryRuntimePlcChannel : IRuntimePlcChannel
+public sealed class InMemoryRuntimePlcChannel : IWritableRuntimePlcChannel
 {
     private readonly object _gate = new();
-    private InMemoryRuntimePlcChannelState _state;
+    private RuntimePlcChannelState _state;
 
     public InMemoryRuntimePlcChannel(
         string plcId,
@@ -38,7 +38,7 @@ public sealed class InMemoryRuntimePlcChannel : IRuntimePlcChannel
         ArgumentNullException.ThrowIfNull(ipAddress);
 
         PlcId = plcId;
-        _state = new InMemoryRuntimePlcChannelState(
+        _state = new RuntimePlcChannelState(
             PlcId: plcId,
             PlcName: plcName,
             LineName: lineName,
@@ -62,7 +62,7 @@ public sealed class InMemoryRuntimePlcChannel : IRuntimePlcChannel
 
     public string PlcId { get; }
 
-    public void ReplaceState(InMemoryRuntimePlcChannelState state)
+    public void ReplaceState(RuntimePlcChannelState state)
     {
         ArgumentNullException.ThrowIfNull(state);
 

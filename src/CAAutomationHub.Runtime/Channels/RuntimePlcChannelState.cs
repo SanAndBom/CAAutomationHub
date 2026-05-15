@@ -2,9 +2,13 @@ using CAAutomationHub.Contracts.Runtime;
 
 namespace CAAutomationHub.Runtime.Channels;
 
-public sealed record InMemoryRuntimePlcChannelState
+/// <summary>
+/// Runtime-local state model used as the source for a PLC channel snapshot before
+/// it is published as a Contracts DTO.
+/// </summary>
+public sealed record RuntimePlcChannelState
 {
-    public InMemoryRuntimePlcChannelState(
+    public RuntimePlcChannelState(
         string PlcId,
         string PlcName,
         string LineName,

@@ -1,3 +1,4 @@
+using System.Reflection;
 using CAAutomationHub.Contracts.Runtime;
 using CAAutomationHub.Runtime.Channels;
 
@@ -70,6 +71,45 @@ public sealed class RuntimeChannelRegistryTests
 
         Assert.True(found);
         Assert.Same(channel, foundChannel);
+    }
+
+    [Fact]
+    public void TryGetChannel_ReturnsReadOnlyRuntimePlcChannelBoundary()
+    {
+        var method = typeof(RuntimeChannelRegistry).GetMethod(nameof(RuntimeChannelRegistry.TryGetChannel));
+        Assert.NotNull(method);
+        ParameterInfo channelParameter = Assert.Single(
+            method.GetParameters(),
+            parameter => parameter.Name == "channel");
+
+        Assert.Equal(typeof(IRuntimePlcChannel).MakeByRefType(), channelParameter.ParameterType);
+    }
+
+    [Fact]
+    public void TryGetChannel_AllowsCallerToPatternMatchWritableChannel()
+    {
+        var registry = new RuntimeChannelRegistry();
+        var channel = new InMemoryRuntimePlcChannel(
+            plcId: "PLC-01",
+            plcName: "Cutting PLC");
+        registry.Add(channel);
+
+        bool found = registry.TryGetChannel("PLC-01", out IRuntimePlcChannel? foundChannel);
+
+        Assert.True(found);
+        IWritableRuntimePlcChannel writable = Assert.IsAssignableFrom<IWritableRuntimePlcChannel>(foundChannel);
+        Assert.Same(channel, writable);
+    }
+
+    [Fact]
+    public void RuntimeChannelRegistry_DoesNotExposeWritableOrUpdateLookupApi()
+    {
+        Assert.Null(typeof(RuntimeChannelRegistry).GetMethod("TryGetWritableChannel"));
+        Assert.Null(typeof(RuntimeChannelRegistry).GetMethod("GetChannel"));
+        Assert.Null(typeof(RuntimeChannelRegistry).GetMethod("Contains"));
+        Assert.DoesNotContain(
+            typeof(RuntimeChannelRegistry).GetMethods(),
+            method => method.Name.Contains("Update", StringComparison.Ordinal));
     }
 
     [Fact]
