@@ -259,6 +259,56 @@ public sealed class WorkStartFlowServiceTests
     }
 
     [Fact]
+    public async Task RunAsync_ReturnsReadFailed_WhenReadOperationFails()
+    {
+        var plc = new FakeWorkStartPlcOperations
+        {
+            ReadResult = WorkStartReadBlockOperationResult.OperationFailed("Read operation failed.")
+        };
+        var query = new FakeWorkStartDataQuery(
+            WorkStartDataQueryResult.Success(CreateSampleData(lotId: null)));
+        var service = new WorkStartFlowService(plc, query);
+
+        var result = await service.RunAsync();
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(WorkStartStep.GroupRead, result.Step);
+        Assert.Equal(WorkStartErrorCode.ReadFailed, result.ErrorCode);
+        Assert.Equal("Read operation failed.", result.Message);
+        Assert.Null(result.SelectedLotId);
+        Assert.False(result.ErrorWriteExpected);
+        Assert.Empty(plc.WrittenErrorCodes);
+        Assert.Empty(query.QueriedLotIds);
+        Assert.Equal(0, plc.PayloadWriteCallCount);
+        Assert.Equal(0, plc.AckWriteCallCount);
+    }
+
+    [Fact]
+    public async Task RunAsync_ReturnsReadParseFailed_WhenReadOperationParseFails()
+    {
+        var plc = new FakeWorkStartPlcOperations
+        {
+            ReadResult = WorkStartReadBlockOperationResult.ParseFailed("Read payload extraction failed.")
+        };
+        var query = new FakeWorkStartDataQuery(
+            WorkStartDataQueryResult.Success(CreateSampleData(lotId: null)));
+        var service = new WorkStartFlowService(plc, query);
+
+        var result = await service.RunAsync();
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(WorkStartStep.GroupReadParse, result.Step);
+        Assert.Equal(WorkStartErrorCode.ReadParseFailed, result.ErrorCode);
+        Assert.Equal("Read payload extraction failed.", result.Message);
+        Assert.Null(result.SelectedLotId);
+        Assert.False(result.ErrorWriteExpected);
+        Assert.Empty(plc.WrittenErrorCodes);
+        Assert.Empty(query.QueriedLotIds);
+        Assert.Equal(0, plc.PayloadWriteCallCount);
+        Assert.Equal(0, plc.AckWriteCallCount);
+    }
+
+    [Fact]
     public async Task RunAsync_DoesNotWriteErrorCode_WhenStartSignalInactive()
     {
         var plc = new FakeWorkStartPlcOperations
@@ -391,6 +441,8 @@ public sealed class WorkStartFlowServiceTests
     {
         public byte[] ReadBlock { get; init; } = CreateReadBlock();
 
+        public WorkStartReadBlockOperationResult? ReadResult { get; init; }
+
         public bool ThrowOnRead { get; init; }
 
         public bool PayloadWriteSucceeds { get; init; } = true;
@@ -417,7 +469,7 @@ public sealed class WorkStartFlowServiceTests
             return ValueTask.CompletedTask;
         }
 
-        public ValueTask<byte[]> ReadWorkStartBlockAsync(CancellationToken cancellationToken = default)
+        public ValueTask<WorkStartReadBlockOperationResult> ReadWorkStartBlockAsync(CancellationToken cancellationToken = default)
         {
             ReadCallCount++;
             if (ThrowOnRead)
@@ -425,7 +477,7 @@ public sealed class WorkStartFlowServiceTests
                 throw new InvalidOperationException("read failed");
             }
 
-            return ValueTask.FromResult(ReadBlock);
+            return ValueTask.FromResult(ReadResult ?? WorkStartReadBlockOperationResult.Success(ReadBlock));
         }
 
         public ValueTask<bool> WriteProcessPayloadAsync(byte[] payload, CancellationToken cancellationToken = default)

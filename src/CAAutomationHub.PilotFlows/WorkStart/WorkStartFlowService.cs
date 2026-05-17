@@ -22,10 +22,10 @@ public sealed class WorkStartFlowService
         {
             await _plcOperations.EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
 
-            byte[] readBlockBytes;
+            WorkStartReadBlockOperationResult readResult;
             try
             {
-                readBlockBytes = await _plcOperations
+                readResult = await _plcOperations
                     .ReadWorkStartBlockAsync(cancellationToken)
                     .ConfigureAwait(false);
             }
@@ -35,6 +35,28 @@ public sealed class WorkStartFlowService
                     WorkStartStep.GroupRead,
                     WorkStartErrorCode.ReadFailed,
                     ex.Message,
+                    selectedLotId: null,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            var readFailure = MapReadFailure(readResult);
+            if (readFailure is not null)
+            {
+                return await FailAsync(
+                    readFailure.Value.Step,
+                    readFailure.Value.ErrorCode,
+                    readFailure.Value.Message,
+                    selectedLotId: null,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            var readBlockBytes = readResult.Data;
+            if (readBlockBytes is null)
+            {
+                return await FailAsync(
+                    WorkStartStep.GroupReadParse,
+                    WorkStartErrorCode.ReadParseFailed,
+                    "Read operation succeeded without block data.",
                     selectedLotId: null,
                     cancellationToken).ConfigureAwait(false);
             }
@@ -218,6 +240,24 @@ public sealed class WorkStartFlowService
         return result;
     }
 
+    private static ReadFailure? MapReadFailure(WorkStartReadBlockOperationResult readResult) =>
+        readResult.Status switch
+        {
+            WorkStartReadBlockOperationStatus.Success => null,
+            WorkStartReadBlockOperationStatus.OperationFailed => new ReadFailure(
+                WorkStartStep.GroupRead,
+                WorkStartErrorCode.ReadFailed,
+                readResult.Message ?? "PLC read operation failed."),
+            WorkStartReadBlockOperationStatus.ParseFailed => new ReadFailure(
+                WorkStartStep.GroupReadParse,
+                WorkStartErrorCode.ReadParseFailed,
+                readResult.Message ?? "PLC read payload extraction failed."),
+            _ => new ReadFailure(
+                WorkStartStep.GroupRead,
+                WorkStartErrorCode.ReadFailed,
+                readResult.Message ?? "PLC read operation failed.")
+        };
+
     private static QueryFailure? MapQueryFailure(WorkStartDataQueryResult queryResult)
     {
         if (queryResult.Succeeded && queryResult.ProcessData is not null)
@@ -241,6 +281,8 @@ public sealed class WorkStartFlowService
                 "DB query failed.")
         };
     }
+
+    private readonly record struct ReadFailure(WorkStartStep Step, WorkStartErrorCode ErrorCode, string Message);
 
     private readonly record struct QueryFailure(WorkStartErrorCode ErrorCode, string Message);
 }

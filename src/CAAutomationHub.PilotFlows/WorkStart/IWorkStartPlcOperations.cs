@@ -4,7 +4,7 @@ public interface IWorkStartPlcOperations
 {
     ValueTask EnsureConnectedAsync(CancellationToken cancellationToken = default);
 
-    ValueTask<byte[]> ReadWorkStartBlockAsync(CancellationToken cancellationToken = default);
+    ValueTask<WorkStartReadBlockOperationResult> ReadWorkStartBlockAsync(CancellationToken cancellationToken = default);
 
     ValueTask<bool> WriteProcessPayloadAsync(
         byte[] payload,
