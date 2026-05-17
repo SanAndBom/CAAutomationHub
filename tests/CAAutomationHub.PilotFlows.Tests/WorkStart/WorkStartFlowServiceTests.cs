@@ -83,6 +83,110 @@ public sealed class WorkStartFlowServiceTests
     }
 
     [Fact]
+    public async Task RunAsync_ReturnsDbMultipleRows_WhenQueryReturnsMultipleRows()
+    {
+        var plc = new FakeWorkStartPlcOperations
+        {
+            ReadBlock = CreateReadBlock(lotId1: "LOT123456789")
+        };
+        var query = new FakeWorkStartDataQuery(
+            WorkStartDataQueryResult.MultipleRows("LOT123456789"));
+        var service = new WorkStartFlowService(plc, query);
+
+        var result = await service.RunAsync();
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(WorkStartStep.DbQuery, result.Step);
+        Assert.Equal(WorkStartErrorCode.DbMultipleRows, result.ErrorCode);
+        Assert.Equal("LOT123456789", result.SelectedLotId);
+        Assert.True(result.ErrorWriteExpected);
+        Assert.Equal(new[] { "LOT123456789" }, query.QueriedLotIds);
+        Assert.Equal(new[] { WorkStartErrorCode.DbMultipleRows }, plc.WrittenErrorCodes);
+        Assert.Equal(0, plc.PayloadWriteCallCount);
+        Assert.Equal(0, plc.AckWriteCallCount);
+    }
+
+    [Fact]
+    public async Task RunAsync_ReturnsDbFailed_WhenQueryReturnsFailed()
+    {
+        var plc = new FakeWorkStartPlcOperations
+        {
+            ReadBlock = CreateReadBlock(lotId1: "LOT123456789")
+        };
+        var query = new FakeWorkStartDataQuery(
+            WorkStartDataQueryResult.Failed("LOT123456789", "DB command failed."));
+        var service = new WorkStartFlowService(plc, query);
+
+        var result = await service.RunAsync();
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(WorkStartStep.DbQuery, result.Step);
+        Assert.Equal(WorkStartErrorCode.DbFailed, result.ErrorCode);
+        Assert.Equal("DB command failed.", result.Message);
+        Assert.Equal("LOT123456789", result.SelectedLotId);
+        Assert.True(result.ErrorWriteExpected);
+        Assert.Equal(new[] { WorkStartErrorCode.DbFailed }, plc.WrittenErrorCodes);
+        Assert.Equal(0, plc.PayloadWriteCallCount);
+        Assert.Equal(0, plc.AckWriteCallCount);
+    }
+
+    [Fact]
+    public async Task RunAsync_ReturnsDbException_WhenQueryThrows()
+    {
+        var plc = new FakeWorkStartPlcOperations
+        {
+            ReadBlock = CreateReadBlock(lotId1: "LOT123456789")
+        };
+        var query = new FakeWorkStartDataQuery(
+            WorkStartDataQueryResult.Success(CreateSampleData(lotId: null)))
+        {
+            QueryException = new InvalidOperationException("DB timeout.")
+        };
+        var service = new WorkStartFlowService(plc, query);
+
+        var result = await service.RunAsync();
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(WorkStartStep.DbQuery, result.Step);
+        Assert.Equal(WorkStartErrorCode.DbException, result.ErrorCode);
+        Assert.Equal("DB timeout.", result.Message);
+        Assert.Equal("LOT123456789", result.SelectedLotId);
+        Assert.True(result.ErrorWriteExpected);
+        Assert.Equal(new[] { WorkStartErrorCode.DbException }, plc.WrittenErrorCodes);
+        Assert.Equal(0, plc.PayloadWriteCallCount);
+        Assert.Equal(0, plc.AckWriteCallCount);
+    }
+
+    [Fact]
+    public async Task RunAsync_ReturnsPayloadBuildFailed_WhenPayloadOptionsAreInvalid()
+    {
+        var plc = new FakeWorkStartPlcOperations
+        {
+            ReadBlock = CreateReadBlock(lotId1: "LOT123456789")
+        };
+        var query = new FakeWorkStartDataQuery(
+            WorkStartDataQueryResult.Success(CreateSampleData(lotId: null)));
+        var service = new WorkStartFlowService(
+            plc,
+            query,
+            new WorkStartFlowOptions
+            {
+                PayloadBuildOptions = new WorkStartPayloadBuildOptions { WordCount = 1 }
+            });
+
+        var result = await service.RunAsync();
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(WorkStartStep.PayloadBuild, result.Step);
+        Assert.Equal(WorkStartErrorCode.PayloadBuildFailed, result.ErrorCode);
+        Assert.Equal("LOT123456789", result.SelectedLotId);
+        Assert.True(result.ErrorWriteExpected);
+        Assert.Equal(new[] { WorkStartErrorCode.PayloadBuildFailed }, plc.WrittenErrorCodes);
+        Assert.Equal(0, plc.PayloadWriteCallCount);
+        Assert.Equal(0, plc.AckWriteCallCount);
+    }
+
+    [Fact]
     public async Task RunAsync_ReturnsBulkWriteFailed_WhenPayloadWriteFails()
     {
         var plc = new FakeWorkStartPlcOperations
@@ -103,6 +207,54 @@ public sealed class WorkStartFlowServiceTests
         Assert.True(result.ErrorWriteExpected);
         Assert.Equal(new[] { WorkStartErrorCode.BulkWriteFailed }, plc.WrittenErrorCodes);
         Assert.Equal(1, plc.PayloadWriteCallCount);
+        Assert.Equal(0, plc.AckWriteCallCount);
+    }
+
+    [Fact]
+    public async Task RunAsync_ReturnsAckWriteFailed_WhenAckWriteFails()
+    {
+        var plc = new FakeWorkStartPlcOperations
+        {
+            ReadBlock = CreateReadBlock(lotId1: "LOT123456789"),
+            AckWriteSucceeds = false
+        };
+        var query = new FakeWorkStartDataQuery(
+            WorkStartDataQueryResult.Success(CreateSampleData(lotId: null)));
+        var service = new WorkStartFlowService(plc, query);
+
+        var result = await service.RunAsync();
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(WorkStartStep.AckWrite, result.Step);
+        Assert.Equal(WorkStartErrorCode.AckWriteFailed, result.ErrorCode);
+        Assert.Equal("LOT123456789", result.SelectedLotId);
+        Assert.True(result.ErrorWriteExpected);
+        Assert.Equal(new[] { WorkStartErrorCode.AckWriteFailed }, plc.WrittenErrorCodes);
+        Assert.Equal(1, plc.PayloadWriteCallCount);
+        Assert.Equal(1, plc.AckWriteCallCount);
+    }
+
+    [Fact]
+    public async Task RunAsync_ReturnsReadFailed_WhenReadThrows()
+    {
+        var plc = new FakeWorkStartPlcOperations
+        {
+            ThrowOnRead = true
+        };
+        var query = new FakeWorkStartDataQuery(
+            WorkStartDataQueryResult.Success(CreateSampleData(lotId: null)));
+        var service = new WorkStartFlowService(plc, query);
+
+        var result = await service.RunAsync();
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(WorkStartStep.GroupRead, result.Step);
+        Assert.Equal(WorkStartErrorCode.ReadFailed, result.ErrorCode);
+        Assert.Null(result.SelectedLotId);
+        Assert.False(result.ErrorWriteExpected);
+        Assert.Empty(plc.WrittenErrorCodes);
+        Assert.Empty(query.QueriedLotIds);
+        Assert.Equal(0, plc.PayloadWriteCallCount);
         Assert.Equal(0, plc.AckWriteCallCount);
     }
 
@@ -239,6 +391,8 @@ public sealed class WorkStartFlowServiceTests
     {
         public byte[] ReadBlock { get; init; } = CreateReadBlock();
 
+        public bool ThrowOnRead { get; init; }
+
         public bool PayloadWriteSucceeds { get; init; } = true;
 
         public bool AckWriteSucceeds { get; init; } = true;
@@ -266,6 +420,11 @@ public sealed class WorkStartFlowServiceTests
         public ValueTask<byte[]> ReadWorkStartBlockAsync(CancellationToken cancellationToken = default)
         {
             ReadCallCount++;
+            if (ThrowOnRead)
+            {
+                throw new InvalidOperationException("read failed");
+            }
+
             return ValueTask.FromResult(ReadBlock);
         }
 
@@ -307,11 +466,18 @@ public sealed class WorkStartFlowServiceTests
 
         public List<string> QueriedLotIds { get; } = [];
 
+        public Exception? QueryException { get; init; }
+
         public ValueTask<WorkStartDataQueryResult> QueryAsync(
             string lotId,
             CancellationToken cancellationToken = default)
         {
             QueriedLotIds.Add(lotId);
+            if (QueryException is not null)
+            {
+                throw QueryException;
+            }
+
             return ValueTask.FromResult(_result);
         }
     }
