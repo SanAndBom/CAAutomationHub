@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AutomationHub Documentation Map</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111417;
+      --panel: #191f24;
+      --panel-2: #20272e;
+      --line: #33404a;
+      --text: #eef3f7;
+      --muted: #aebbc6;
+      --soft: #7d8d9a;
+      --cyan: #50c7e8;
+      --green: #77d88d;
+      --yellow: #f0cf65;
+      --red: #ff7b7b;
+      --blue: #7eb6ff;
+      --shadow: 0 18px 50px rgba(0, 0, 0, .28);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif;
+      line-height: 1.55;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 0 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: grid;
+      gap: 2px;
+    }
+
+    .eyebrow {
+      color: var(--cyan);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 920px;
+      font-size: clamp(34px, 5vw, 72px);
+      font-weight: 760;
+    }
+
+    h2 {
+      font-size: 26px;
+      margin-bottom: 14px;
+    }
+
+    h3 {
+      font-size: 17px;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(340px, .75fr);
+      gap: 28px;
+      padding: 42px 0 30px;
+      align-items: stretch;
+    }
+
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 26px;
+      min-height: 420px;
+    }
+
+    .hero-copy p {
+      max-width: 820px;
+      font-size: 18px;
+    }
+
+    .status-board {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+      border-radius: 8px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      min-height: 92px;
+      padding: 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      display: grid;
+      align-content: space-between;
+      gap: 8px;
+    }
+
+    .metric strong {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .metric span {
+      color: var(--soft);
+      font-size: 13px;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      background: #151a1f;
+      color: var(--muted);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      margin: 0 -28px 26px;
+      padding: 10px 28px;
+      background: rgba(17, 20, 23, .92);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid rgba(255, 255, 255, .04);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+    }
+
+    .nav a {
+      white-space: nowrap;
+      padding: 8px 12px;
+      color: var(--muted);
+      border: 1px solid transparent;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .nav a:hover {
+      color: var(--text);
+      border-color: var(--line);
+      background: var(--panel);
+    }
+
+    .section {
+      padding: 30px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .section-head p {
+      max-width: 760px;
+    }
+
+    .direction-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .direction {
+      padding: 18px;
+      min-height: 168px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .direction b {
+      color: var(--text);
+    }
+
+    .direction p {
+      font-size: 14px;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .flow-step {
+      position: relative;
+      padding: 16px;
+      min-height: 148px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+    }
+
+    .flow-step::after {
+      content: "";
+      position: absolute;
+      right: -10px;
+      top: 50%;
+      width: 10px;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .flow-step:last-child::after {
+      display: none;
+    }
+
+    .flow-step .number {
+      color: var(--cyan);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .flow-step p {
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .lanes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .lane {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .lane ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+
+    .lane li + li {
+      margin-top: 8px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) repeat(4, auto);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    input[type="search"], select {
+      width: 100%;
+      min-height: 42px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font: inherit;
+    }
+
+    button {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+    }
+
+    button:hover {
+      border-color: var(--cyan);
+    }
+
+    .doc-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .doc-card {
+      min-height: 188px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .doc-card:hover {
+      border-color: rgba(80, 199, 232, .75);
+      background: #1c242b;
+    }
+
+    .doc-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .pill.runtime {
+      color: var(--blue);
+      border-color: rgba(126, 182, 255, .38);
+    }
+
+    .pill.wpf {
+      color: var(--green);
+      border-color: rgba(119, 216, 141, .38);
+    }
+
+    .pill.context {
+      color: var(--yellow);
+      border-color: rgba(240, 207, 101, .38);
+    }
+
+    .pill.contract {
+      color: var(--cyan);
+      border-color: rgba(80, 199, 232, .38);
+    }
+
+    .path {
+      color: var(--soft);
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .doc-card p {
+      font-size: 14px;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 10px;
+    }
+
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .timeline-row strong {
+      color: var(--cyan);
+    }
+
+    .timeline-row p {
+      font-size: 14px;
+    }
+
+    .empty {
+      display: none;
+      padding: 24px;
+      border: 1px dashed var(--line);
+      color: var(--muted);
+      text-align: center;
+      border-radius: 8px;
+    }
+
+    .footer {
+      padding: 26px 0 8px;
+      color: var(--soft);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1100px) {
+      .hero,
+      .direction-grid,
+      .flow,
+      .lanes,
+      .doc-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .hero-copy {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .shell {
+        padding: 18px;
+      }
+
+      .nav {
+        margin-left: -18px;
+        margin-right: -18px;
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .hero,
+      .direction-grid,
+      .flow,
+      .lanes,
+      .doc-grid,
+      .filters,
+      .timeline-row,
+      .metric-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-step::after {
+        display: none;
+      }
+
+      .section-head {
+        display: grid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="eyebrow">CAAutomationHub Documentation Map</span>
+        <span>AGENTS.md + docs 전체 구조</span>
+      </div>
+      <div class="tag-row" aria-label="current anchors">
+        <span class="tag">Latest: AH-RUNTIME-49</span>
+        <span class="tag">Next: AH-RUNTIME-50</span>
+        <span class="tag">ContextPublisher disabled</span>
+      </div>
+    </header>
+
+    <section class="hero" id="overview">
+      <div class="hero-copy">
+        <div>
+          <div class="eyebrow">프로젝트가 향하는 방향</div>
+          <h1>기존 PLC별 1:1 중계 구조를 Runtime 중심 플랫폼으로 재구성한다.</h1>
+        </div>
+        <p>
+          이 문서 지도는 Codex가 만든 실행 계약, 인지 계약, WPF closeout, Runtime closeout, Pilot/FLOW.JSON boundary 문서를 한 화면에서 이어 읽기 위한 정적 HTML이다.
+          핵심 흐름은 Code Change -> Test / Build -> Verification Evidence -> Harness Closeout -> Cognitive Contract 유지 -> ACCEPT 판정이다.
+        </p>
+      </div>
+
+      <aside class="status-board" aria-label="documentation status">
+        <h2>현재 읽는 법</h2>
+        <p>위에서 방향을 잡고, 가운데에서 경계를 확인한 뒤, 아래 문서 목록에서 실제 closeout으로 들어간다.</p>
+        <div class="metric-grid">
+          <div class="metric">
+            <strong id="totalDocs">0</strong>
+            <span>tracked docs exposed</span>
+          </div>
+          <div class="metric">
+            <strong>49</strong>
+            <span>Runtime closeout anchors</span>
+          </div>
+          <div class="metric">
+            <strong>24</strong>
+            <span>WPF dashboard anchors</span>
+          </div>
+          <div class="metric">
+            <strong>B</strong>
+            <span>FLOW.JSON strategy selected</span>
+          </div>
+        </div>
+        <div class="tag-row">
+          <span class="tag">Runtime canonical state</span>
+          <span class="tag">WPF consumes snapshots</span>
+          <span class="tag">XGT stays adapter-side</span>
+          <span class="tag">FakePlc is harness</span>
+        </div>
+      </aside>
+    </section>
+
+    <nav class="nav" aria-label="page sections">
+      <a href="#direction">방향성</a>
+      <a href="#layers">문서 계층</a>
+      <a href="#boundary">Boundary</a>
+      <a href="#runtime-flow">Runtime 흐름</a>
+      <a href="#documents">전체 문서</a>
+      <a href="#recent">최근 Anchor</a>
+    </nav>
+
+    <section class="section" id="direction">
+      <div class="section-head">
+        <div>
+          <h2>방향성 요약</h2>
+          <p>이 프로젝트는 UI prototype에서 출발해 Runtime canonical state, polling publish path, XGT reuse boundary, Pilot business flow, FLOW.JSON 전략으로 이동 중이다.</p>
+        </div>
+      </div>
+      <div class="direction-grid">
+        <article class="direction">
+          <h3>1. Runtime이 중심</h3>
+          <p>Runtime은 canonical state의 중심이다. `RuntimeSnapshot`은 임시 DTO가 아니라 WPF와 운영 흐름이 공유하는 상태 계약이다.</p>
+        </article>
+        <article class="direction">
+          <h3>2. UI는 표현 계층</h3>
+          <p>WPF Dashboard는 `DashboardSnapshot`을 표시한다. polling, reconnect, driver detail은 UI 책임이 아니다.</p>
+        </article>
+        <article class="direction">
+          <h3>3. Driver는 primitive</h3>
+          <p>`XgtDriverCore`는 protocol, transport, recovery primitive에 집중한다. business flow를 직접 소유하지 않는다.</p>
+        </article>
+        <article class="direction">
+          <h3>4. FLOW.JSON은 업무 정의</h3>
+          <p>`FLOW.JSON`은 XGT command list가 아니라 PLC별 Business Flow Definition이다. 초기 구조는 `flow / bindings / metadata`다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="layers">
+      <div class="section-head">
+        <div>
+          <h2>문서 계층</h2>
+          <p>문서는 단순 기록이 아니라 장기 계약을 잃지 않기 위한 계층 구조다.</p>
+        </div>
+      </div>
+      <div class="lanes">
+        <article class="lane">
+          <h3>고정 계약</h3>
+          <ul>
+            <li>`AGENTS.md`: Codex 실행 계약, Boundary / Harness / Validation / ACCEPT 규칙.</li>
+            <li>`META_IPRO_CODEX_COGNITIVE_INTERFACE.md`: 장기 인지 계약과 역할 분리.</li>
+            <li>`COGNITIVE_SYNC_CHECK.md`: 새 세션에서 맥락 복원 여부를 확인하는 checksum.</li>
+          </ul>
+        </article>
+        <article class="lane">
+          <h3>작업 기록</h3>
+          <ul>
+            <li>`docs/harness/AH-WPF-xx.md`: WPF Dashboard prototype에서 Runtime bridge 직전까지의 closeout.</li>
+            <li>`docs/harness/AH-RUNTIME-xx.md`: Runtime 전환, polling, state, XGT reuse, Pilot/FLOW.JSON closeout.</li>
+            <li>`CODEX_RULES.md`, `SUMMARY_REVIEW_RUBRIC.md`: Codex 산출물 검토 기준.</li>
+          </ul>
+        </article>
+        <article class="lane">
+          <h3>현재 전략</h3>
+          <ul>
+            <li>`AH-RUNTIME-49`: PLC별 단일 `FLOW.JSON` 내부를 `flow / bindings / metadata`로 분리.</li>
+            <li>다음 후보: `Pilot Flow Schema Draft`.</li>
+            <li>parser, executor, XGT adapter, DB query는 아직 구현 단계가 아니다.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="boundary">
+      <div class="section-head">
+        <div>
+          <h2>Boundary Map</h2>
+          <p>문서들이 반복해서 지키는 핵심 경계다. 어느 작업을 하든 이 선을 넘지 않는 것이 ACCEPT의 조건이다.</p>
+        </div>
+      </div>
+      <div class="flow">
+        <article class="flow-step">
+          <div class="number">01</div>
+          <h3>WPF Dashboard</h3>
+          <p>사용자에게 상태를 보여준다. Runtime 내부 polling과 driver detail을 직접 수행하지 않는다.</p>
+        </article>
+        <article class="flow-step">
+          <div class="number">02</div>
+          <h3>Adapter / Mapper</h3>
+          <p>`RuntimeSnapshot`을 `DashboardSnapshot`으로 변환한다. UI 친화 표현 계층이다.</p>
+        </article>
+        <article class="flow-step">
+          <div class="number">03</div>
+          <h3>Runtime Core</h3>
+          <p>canonical state, channel registry, snapshot publish path를 관리한다. vendor-neutral을 유지한다.</p>
+        </article>
+        <article class="flow-step">
+          <div class="number">04</div>
+          <h3>Adapter / Handler</h3>
+          <p>XGT read/write, DB query, payload build, ACK/error write 실행 책임을 맡는다.</p>
+        </article>
+        <article class="flow-step">
+          <div class="number">05</div>
+          <h3>Driver / FakePlc</h3>
+          <p>Driver는 protocol/transport primitive, FakePlc는 통신/장애 시나리오 검증 하네스다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="runtime-flow">
+      <div class="section-head">
+        <div>
+          <h2>Runtime 전환 흐름</h2>
+          <p>closeout 문서가 쌓인 방향을 큰 덩어리로 보면 다음과 같다.</p>
+        </div>
+      </div>
+      <div class="timeline">
+        <div class="timeline-row">
+          <strong>AH-WPF-01~24</strong>
+          <p>Dashboard shell, fake live update, PLC editor, event log, runtime adapter, snapshot mapper, refresh orchestration을 거쳐 Runtime bridge 진입 직전 상태를 정리했다.</p>
+        </div>
+        <div class="timeline-row">
+          <strong>AH-RUNTIME-01~30</strong>
+          <p>Runtime project, supervisor, snapshot event, in-memory supervisor/channel, registry, writable boundary, ContextPublisher 정책 정리를 통해 Runtime core 기반을 세웠다.</p>
+        </div>
+        <div class="timeline-row">
+          <strong>AH-RUNTIME-31~41</strong>
+          <p>`ChannelPollingResult`, state mapper, publish orchestrator, batch handling, concurrency review, polling cycle, polling target model을 통해 Runtime polling state path를 정렬했다.</p>
+        </div>
+        <div class="timeline-row">
+          <strong>AH-RUNTIME-42~44</strong>
+          <p>기존 `XgtDriverCore`, `FakePlc`, `XgtChannelRunner` 자산을 어떻게 재사용할지 검토하고, Pilot business flow placement boundary를 정리했다.</p>
+        </div>
+        <div class="timeline-row">
+          <strong>AH-RUNTIME-45~49</strong>
+          <p>`WorkStartPilotService`를 scenario harness로 정식화하고, Pilot Flow Matrix와 `FLOW.JSON` Business Flow Definition, Template vs Binding 경계를 확정했다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="documents">
+      <div class="section-head">
+        <div>
+          <h2>전체 문서 목록</h2>
+          <p>`AGENTS.md`와 `docs` 폴더의 모든 문서를 노출한다. 검색어나 분류를 바꾸면 문서 카드가 즉시 줄어든다.</p>
+        </div>
+      </div>
+      <div class="filters" role="search">
+        <input id="search" type="search" placeholder="문서명, 경계, FLOW.JSON, Runtime, WPF, Context 등으로 검색">
+        <select id="groupFilter" aria-label="group filter">
+          <option value="all">모든 그룹</option>
+          <option value="contract">계약 / 규칙</option>
+          <option value="context">인지 / 현재 상태</option>
+          <option value="runtime">Runtime</option>
+          <option value="wpf">WPF</option>
+          <option value="ui">UI Spec</option>
+        </select>
+        <button type="button" data-filter="runtime">Runtime</button>
+        <button type="button" data-filter="wpf">WPF</button>
+        <button type="button" data-filter="context">Context</button>
+        <button type="button" data-filter="all">Reset</button>
+      </div>
+      <div id="docGrid" class="doc-grid"></div>
+      <div id="empty" class="empty">검색 결과가 없습니다.</div>
+    </section>
+
+    <section class="section" id="recent">
+      <div class="section-head">
+        <div>
+          <h2>최근 Commit Anchor</h2>
+          <p>현재 최신 문서 방향은 AH-RUNTIME-49에 있다.</p>
+        </div>
+      </div>
+      <div class="timeline">
+        <div class="timeline-row"><strong>767ef6e</strong><p>docs: close out AH-RUNTIME-49 flow template binding boundary review</p></div>
+        <div class="timeline-row"><strong>2c038da</strong><p>docs: close out AH-RUNTIME-48 flow json boundary review</p></div>
+        <div class="timeline-row"><strong>bc8c3ad</strong><p>docs: add AH-RUNTIME-47 pilot flow scenario matrix</p></div>
+        <div class="timeline-row"><strong>5653fdd</strong><p>docs: close out AH-RUNTIME-46 pilot flow matrix boundary review</p></div>
+        <div class="timeline-row"><strong>d1b72fb</strong><p>docs: close out AH-RUNTIME-45 pilot flow scenario boundary review</p></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      Generated as a static documentation map. Open this file directly in a browser; no server is required.
+    </footer>
+  </main>
+
+  <script>
+    const runtimeSummaries = {
+      "31": "Runtime polling event 결과를 RuntimePlcChannelState로 변환하는 mapper skeleton.",
+      "32": "Runtime publish 흐름에 polling result mapper를 연결하는 boundary review.",
+      "33": "별도 orchestration service skeleton으로 publish path를 정리.",
+      "34": "Fake polling event 기반 end-to-end Runtime publish test.",
+      "35": "batch ChannelPollingResult 처리와 polling orchestration skeleton.",
+      "36": "polling publish path 동시성 / lost update risk boundary review.",
+      "37": "PollingScheduler 전 단계의 scheduler / cycle boundary review.",
+      "38": "manual polling cycle boundary skeleton.",
+      "39": "Runtime polling target model boundary review.",
+      "40": "Runtime polling target model skeleton.",
+      "41": "ChannelPollingTarget에서 ChannelPollingResult batch가 만들어지는 production boundary review.",
+      "42": "XgtDriverCore / FakePlc / XgtChannelRunner 재사용 boundary review.",
+      "43": "Existing Project Retrieval Plan boundary review.",
+      "44": "XgtAdapter / Pilot Business Flow Placement boundary review.",
+      "45": "WorkStartPilotService를 Pilot Flow Documentation / Scenario Harness로 정식화.",
+      "46": "Pilot Flow Scenario Matrix 범위, 컬럼, naming, ACK/Error policy review.",
+      "47": "Pilot Flow Scenario Matrix 문서.",
+      "48": "FLOW.JSON은 XGT command list가 아니라 PLC별 Business Flow Definition이라는 boundary review.",
+      "49": "PLC별 단일 FLOW.JSON 내부를 flow / bindings / metadata로 나누는 Template vs Binding review."
+    };
+
+    const runtimePhase = (id) => {
+      const n = Number(String(id).split("-")[0]);
+      if (n <= 9) return "Runtime project / supervisor / snapshot 기반 형성";
+      if (n <= 20) return "channel registry, state, snapshot publish path 확장";
+      if (n <= 30) return "writable boundary, ContextPublisher 정책, cognitive record 정리";
+      if (n <= 41) return "polling result, orchestration, target model 정렬";
+      return "XGT reuse, Pilot business flow, FLOW.JSON boundary";
+    };
+
+    const runtimeIds = [
+      "01","02","03","04","05","06","07","08","09","10",
+      "11","12","13","14","15","16","17","18","19","20",
+      "21","22","23","24","25","26","27","28","29","30",
+      "30-1","30-2","30-3","31","32","33","34","35","36","37",
+      "38","39","40","41","42","43","44","45","46","47","48","49"
+    ];
+
+    const wpfTitles = {
+      "01": "Dashboard Shell + PLC Card Static Prototype",
+      "02": "Fake Live Update Prototype",
+      "03": "PlcEditorDialog Static Prototype",
+      "04": "RealtimeEventLogPopup Static Prototype",
+      "05": "RuntimeDashboardAdapter Skeleton",
+      "06": "Runtime Event to Realtime Log Mapper Skeleton"
+    };
+
+    const wpfPhase = (id) => {
+      const n = Number(id);
+      if (n <= 6) return "WPF Dashboard prototype와 fake data 기반 화면 구성";
+      if (n <= 14) return "PLC card, trend, editor, event log, dashboard source refactor";
+      return "Runtime bridge contract, snapshot mapper, refresh orchestration, supervisor boundary";
+    };
+
+    const wpfIds = [
+      "01","02","03","04","05","06","07","08","09","10","11","12",
+      "13","14","15","16","17","18","19","20","21","22","23","24"
+    ];
+
+    const documents = [
+      {
+        group: "contract",
+        path: "../AGENTS.md",
+        title: "AGENTS.md",
+        meaning: "Codex가 작업 전 반드시 보존해야 하는 최상위 실행 계약. Historical record, verification, boundary, harness, ACCEPT 규칙을 정의한다."
+      },
+      {
+        group: "context",
+        path: "context/META_IPRO_CODEX_COGNITIVE_INTERFACE.md",
+        title: "META IPRO CODEX Cognitive Interface",
+        meaning: "장기 인지 계약. Runtime / WPF / Driver / FakePlc / Harness 경계와 역할, drift risk를 복원한다."
+      },
+      {
+        group: "context",
+        path: "context/COGNITIVE_SYNC_CHECK.md",
+        title: "Cognitive Sync Check",
+        meaning: "새 채팅방이나 새 Codex 세션에서 장기 맥락이 제대로 복원되었는지 확인하는 checksum."
+      },
+      {
+        group: "context",
+        path: "context/WPF_RUNTIME_BRIDGE_CURRENT_STATE.md",
+        title: "WPF Runtime Bridge Current State",
+        meaning: "WPF Dashboard가 Fake prototype에서 Real Runtime Bridge로 넘어가기 직전 상태를 요약한 handoff anchor."
+      },
+      {
+        group: "ui",
+        path: "ui/DASHBOARD_UI_SPEC.md",
+        title: "Dashboard UI Spec",
+        meaning: "AutomationHub Dashboard의 화면 범위, 색상 의미, PLC card, detail pane, event log UI 기준."
+      },
+      {
+        group: "ui",
+        path: "project-document-map.html",
+        title: "Project Document Map HTML",
+        meaning: "AGENTS.md와 docs 폴더의 문서 구조, 의미, Runtime 전환 방향성을 한 화면에서 보는 정적 HTML 인덱스."
+      },
+      {
+        group: "contract",
+        path: "harness/CODEX_RULES.md",
+        title: "CODEX_RULES.md",
+        meaning: "Codex 작업 공통 규칙. 문서와 closeout 품질을 맞추기 위한 기준."
+      },
+      {
+        group: "contract",
+        path: "harness/SUMMARY_REVIEW_RUBRIC.md",
+        title: "SUMMARY_REVIEW_RUBRIC.md",
+        meaning: "Codex summary를 검토할 때 사용하는 기준. 의미, 경계, 검증 누락을 걸러낸다."
+      },
+      ...wpfIds.map(id => ({
+        group: "wpf",
+        path: `harness/AH-WPF-${id}.md`,
+        title: `AH-WPF-${id} ${wpfTitles[id] || "Closeout"}`,
+        meaning: wpfPhase(id)
+      })),
+      ...runtimeIds.map(id => ({
+        group: "runtime",
+        path: `harness/AH-RUNTIME-${id}.md`,
+        title: `AH-RUNTIME-${id}${id === "47" ? " Pilot Flow Scenario Matrix" : " Closeout"}`,
+        meaning: runtimeSummaries[id] || runtimePhase(id)
+      }))
+    ];
+
+    const groupLabel = {
+      contract: "계약",
+      context: "Context",
+      runtime: "Runtime",
+      wpf: "WPF",
+      ui: "UI"
+    };
+
+    const search = document.getElementById("search");
+    const groupFilter = document.getElementById("groupFilter");
+    const grid = document.getElementById("docGrid");
+    const empty = document.getElementById("empty");
+    const totalDocs = document.getElementById("totalDocs");
+
+    totalDocs.textContent = documents.length;
+
+    function renderDocs() {
+      const query = search.value.trim().toLowerCase();
+      const group = groupFilter.value;
+      const filtered = documents.filter(doc => {
+        const text = `${doc.title} ${doc.path} ${doc.meaning} ${doc.group}`.toLowerCase();
+        return (group === "all" || doc.group === group) && (!query || text.includes(query));
+      });
+
+      grid.innerHTML = filtered.map(doc => `
+        <a class="doc-card" href="${doc.path}">
+          <div class="doc-meta">
+            <span class="pill ${doc.group}">${groupLabel[doc.group]}</span>
+            <span class="pill">${doc.path.endsWith(".md") ? "MD" : "DOC"}</span>
+          </div>
+          <h3>${doc.title}</h3>
+          <p>${doc.meaning}</p>
+          <div class="path">${doc.path}</div>
+        </a>
+      `).join("");
+
+      empty.style.display = filtered.length ? "none" : "block";
+    }
+
+    search.addEventListener("input", renderDocs);
+    groupFilter.addEventListener("change", renderDocs);
+    document.querySelectorAll("button[data-filter]").forEach(button => {
+      button.addEventListener("click", () => {
+        groupFilter.value = button.dataset.filter;
+        renderDocs();
+      });
+    });
+
+    renderDocs();
+  </script>
+</body>
+</html>

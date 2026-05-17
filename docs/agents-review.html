@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AGENTS.md Review Board</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101316;
+      --panel: #181e23;
+      --panel-2: #20272e;
+      --line: #33404a;
+      --text: #eff4f8;
+      --muted: #afbdc7;
+      --soft: #83919d;
+      --cyan: #4fc7e8;
+      --green: #7bd98d;
+      --yellow: #f2cf68;
+      --red: #ff7c7c;
+      --blue: #82b9ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif;
+      line-height: 1.55;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      width: min(1440px, calc(100% - 48px));
+      margin: 0 auto;
+      padding: 24px 0 36px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 0 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: grid;
+      gap: 2px;
+    }
+
+    .eyebrow {
+      color: var(--cyan);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 940px;
+      font-size: clamp(36px, 5.4vw, 76px);
+      font-weight: 780;
+    }
+
+    h2 {
+      margin-bottom: 12px;
+      font-size: 26px;
+    }
+
+    h3 {
+      font-size: 17px;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    code {
+      color: var(--cyan);
+      font-family: Consolas, "Cascadia Mono", monospace;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(360px, .8fr);
+      gap: 28px;
+      padding: 42px 0 28px;
+    }
+
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+      min-height: 430px;
+    }
+
+    .hero-copy p {
+      max-width: 850px;
+      font-size: 18px;
+    }
+
+    .review-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .score {
+      min-height: 92px;
+      padding: 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      display: grid;
+      gap: 8px;
+      align-content: space-between;
+    }
+
+    .score strong {
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .score span {
+      color: var(--soft);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      background: #151a1f;
+      color: var(--muted);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin: 0 calc((100vw - min(1440px, calc(100vw - 48px))) / -2) 24px;
+      padding: 10px calc((100vw - min(1440px, calc(100vw - 48px))) / 2);
+      background: rgba(16, 19, 22, .92);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid rgba(255, 255, 255, .04);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+    }
+
+    .nav a {
+      white-space: nowrap;
+      padding: 8px 12px;
+      color: var(--muted);
+      border: 1px solid transparent;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .nav a:hover {
+      color: var(--text);
+      border-color: var(--line);
+      background: var(--panel);
+    }
+
+    .section {
+      padding: 30px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .section-head p {
+      max-width: 760px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+      min-height: 150px;
+    }
+
+    .panel p,
+    .panel li {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    ul, ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    li + li {
+      margin-top: 8px;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .flow-step {
+      position: relative;
+      min-height: 150px;
+      padding: 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .flow-step::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -10px;
+      width: 10px;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .flow-step:last-child::after {
+      display: none;
+    }
+
+    .number {
+      color: var(--cyan);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .checklist {
+      display: grid;
+      gap: 10px;
+    }
+
+    .check-row {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr) 120px;
+      gap: 12px;
+      align-items: start;
+      min-height: 72px;
+      padding: 14px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .check-row input {
+      width: 18px;
+      height: 18px;
+      margin-top: 3px;
+      accent-color: var(--cyan);
+    }
+
+    .status-pill {
+      justify-self: end;
+      min-height: 26px;
+      padding: 3px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .check-row.done {
+      border-color: rgba(123, 217, 141, .62);
+      background: #16221c;
+    }
+
+    .check-row.done .status-pill {
+      color: var(--green);
+      border-color: rgba(123, 217, 141, .5);
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) repeat(3, auto);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    input[type="search"], select {
+      width: 100%;
+      min-height: 42px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font: inherit;
+    }
+
+    button {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+    }
+
+    button:hover {
+      border-color: var(--cyan);
+    }
+
+    .rule-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .rule-card {
+      min-height: 168px;
+      padding: 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .rule-card[data-visible="false"] {
+      display: none;
+    }
+
+    .rule-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .pill.must {
+      color: var(--red);
+      border-color: rgba(255, 124, 124, .45);
+    }
+
+    .pill.boundary {
+      color: var(--yellow);
+      border-color: rgba(242, 207, 104, .45);
+    }
+
+    .pill.record {
+      color: var(--blue);
+      border-color: rgba(130, 185, 255, .45);
+    }
+
+    .pill.verify {
+      color: var(--green);
+      border-color: rgba(123, 217, 141, .45);
+    }
+
+    .quote {
+      padding: 16px;
+      border-left: 4px solid var(--cyan);
+      background: var(--panel);
+      color: var(--muted);
+      border-radius: 6px;
+    }
+
+    .source {
+      max-height: 540px;
+      overflow: auto;
+      background: #0c0f12;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      white-space: pre-wrap;
+      color: #dbe4eb;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .footer {
+      padding: 26px 0 4px;
+      color: var(--soft);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1180px) {
+      .hero,
+      .grid-4,
+      .flow,
+      .rule-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .shell {
+        width: min(100% - 32px, 1440px);
+      }
+
+      .hero,
+      .grid-4,
+      .grid-3,
+      .flow,
+      .rule-grid,
+      .filters,
+      .score-grid,
+      .check-row {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-copy {
+        min-height: auto;
+      }
+
+      .flow-step::after {
+        display: none;
+      }
+
+      .status-pill {
+        justify-self: start;
+      }
+
+      .section-head {
+        display: grid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="eyebrow">AGENTS.md Review Board</span>
+        <span>AutomationHub Codex 실행 계약 리뷰 화면</span>
+      </div>
+      <div class="tag-row">
+        <a class="tag" href="../AGENTS.md">Open AGENTS.md</a>
+        <a class="tag" href="project-document-map.html">Project Map</a>
+      </div>
+    </header>
+
+    <section class="hero" id="overview">
+      <div class="hero-copy">
+        <div>
+          <div class="eyebrow">Review Target</div>
+          <h1>AGENTS.md는 Codex가 프로젝트 경계를 잃지 않게 만드는 최상위 실행 계약이다.</h1>
+        </div>
+        <p>
+          이 화면은 `AGENTS.md`를 검토할 때 핵심 계약, 검증 흐름, Boundary 위험, Cognitive Sync 항목을 빠르게 확인하기 위한 HTML 리뷰 보드다.
+          원문을 대체하지 않고, 리뷰어가 무엇을 봐야 하는지 먼저 정렬한다.
+        </p>
+      </div>
+
+      <aside class="review-card">
+        <h2>Review Snapshot</h2>
+        <p>`AGENTS.md`의 핵심 목적은 빠른 코드 생성이 아니라 장기 프로젝트 맥락, 검증 흐름, 하네스 원칙, Boundary 계약 보존이다.</p>
+        <div class="score-grid">
+          <div class="score"><strong>10</strong><span>contract sections</span></div>
+          <div class="score"><strong>8</strong><span>core review gates</span></div>
+          <div class="score"><strong>0</strong><span>ContextPublisher auto publish</span></div>
+          <div class="score"><strong>1</strong><span>primary historical record path</span></div>
+        </div>
+        <div class="tag-row">
+          <span class="tag">Boundary</span>
+          <span class="tag">Harness</span>
+          <span class="tag">Validation</span>
+          <span class="tag">ACCEPT</span>
+          <span class="tag">Memory Hygiene</span>
+        </div>
+      </aside>
+    </section>
+
+    <nav class="nav" aria-label="review sections">
+      <a href="#contract">계약 구조</a>
+      <a href="#flow">완료 흐름</a>
+      <a href="#checklist">리뷰 체크리스트</a>
+      <a href="#rules">규칙 카드</a>
+      <a href="#risk">위험 신호</a>
+      <a href="#source">원문</a>
+    </nav>
+
+    <section class="section" id="contract">
+      <div class="section-head">
+        <div>
+          <h2>계약 구조</h2>
+          <p>`AGENTS.md`는 10개 섹션으로 Codex의 작업 방식과 완료 판정 기준을 고정한다.</p>
+        </div>
+      </div>
+      <div class="grid-4">
+        <article class="panel">
+          <h3>Historical Record</h3>
+          <p>`docs/harness/AH-*.md` Closeout 문서가 Runtime 작업의 primary historical record다.</p>
+        </article>
+        <article class="panel">
+          <h3>Required Behavior</h3>
+          <p>코드 변경 후 변경 내용, 검증 결과, Harness / Boundary / Validation 영향을 보고해야 한다.</p>
+        </article>
+        <article class="panel">
+          <h3>Verification</h3>
+          <p>빌드/테스트 필요 여부, 실행 명령, 결과, ACCEPT 가능 여부를 완료 전 확인한다.</p>
+        </article>
+        <article class="panel">
+          <h3>Cognitive Contract</h3>
+          <p>새 세션이나 큰 전환 전 장기 맥락 문서를 기준으로 drift를 막는다.</p>
+        </article>
+        <article class="panel">
+          <h3>Core Invariants</h3>
+          <p>Runtime shared execution path, canonical state, UI/Driver/Supervisor 책임 분리를 보존한다.</p>
+        </article>
+        <article class="panel">
+          <h3>Instruction Shape</h3>
+          <p>Goal, Context, Constraints, Done when과 Harness, Boundary, Validation, ACCEPT 흐름을 유지한다.</p>
+        </article>
+        <article class="panel">
+          <h3>Boundary Awareness</h3>
+          <p>불확실하면 구현하지 않고 Boundary Review로 전환한다.</p>
+        </article>
+        <article class="panel">
+          <h3>Memory Hygiene</h3>
+          <p>확정 계약과 임시 아이디어를 분리하고 오래된 정보가 현재 작업을 오염시키지 않게 한다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="flow">
+      <div class="section-head">
+        <div>
+          <h2>완료 판정 흐름</h2>
+          <p>`AGENTS.md`가 요구하는 프로젝트 운영 흐름이다.</p>
+        </div>
+      </div>
+      <div class="flow">
+        <article class="flow-step">
+          <div class="number">01</div>
+          <h3>Code Change</h3>
+          <p>국소 구현은 가능하지만 Runtime / WPF / Driver / Harness 경계를 먼저 본다.</p>
+        </article>
+        <article class="flow-step">
+          <div class="number">02</div>
+          <h3>Test / Build</h3>
+          <p>관련 테스트가 있으면 실행하고, 실행 명령과 결과를 남긴다.</p>
+        </article>
+        <article class="flow-step">
+          <div class="number">03</div>
+          <h3>Evidence</h3>
+          <p>Verification evidence 없이 완료 판정하지 않는다.</p>
+        </article>
+        <article class="flow-step">
+          <div class="number">04</div>
+          <h3>Closeout</h3>
+          <p>Closeout이 필요한 작업은 `docs/harness/AH-*.md`에 historical record를 남긴다.</p>
+        </article>
+        <article class="flow-step">
+          <div class="number">05</div>
+          <h3>Cognitive Contract</h3>
+          <p>장기 계약과 Core Invariants가 훼손되지 않았는지 확인한다.</p>
+        </article>
+        <article class="flow-step">
+          <div class="number">06</div>
+          <h3>ACCEPT</h3>
+          <p>기능 성공뿐 아니라 의미, 경계, 검증이 유지된 상태다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="checklist">
+      <div class="section-head">
+        <div>
+          <h2>리뷰 체크리스트</h2>
+          <p>체크 상태는 브라우저 localStorage에 저장된다. 실제 승인 기록은 Closeout 또는 최종 보고에 남긴다.</p>
+        </div>
+      </div>
+      <div class="checklist" id="checklistRows"></div>
+    </section>
+
+    <section class="section" id="rules">
+      <div class="section-head">
+        <div>
+          <h2>규칙 카드</h2>
+          <p>검색 또는 분류 필터로 `AGENTS.md`의 핵심 규칙을 빠르게 찾는다.</p>
+        </div>
+      </div>
+      <div class="filters">
+        <input id="ruleSearch" type="search" placeholder="예: Runtime, ContextPublisher, ACCEPT, Boundary, FakePlc">
+        <select id="ruleType" aria-label="rule type">
+          <option value="all">모든 규칙</option>
+          <option value="record">Record</option>
+          <option value="verify">Verification</option>
+          <option value="boundary">Boundary</option>
+          <option value="must">Must Preserve</option>
+        </select>
+        <button type="button" data-filter="boundary">Boundary</button>
+        <button type="button" data-filter="all">Reset</button>
+      </div>
+      <div class="rule-grid" id="ruleGrid"></div>
+    </section>
+
+    <section class="section" id="risk">
+      <div class="section-head">
+        <div>
+          <h2>리뷰 중 위험 신호</h2>
+          <p>아래 항목이 보이면 AGENTS.md 위반 가능성이 높다.</p>
+        </div>
+      </div>
+      <div class="grid-3">
+        <article class="panel">
+          <h3>완료 판정 위험</h3>
+          <ul>
+            <li>테스트/빌드 결과 없이 완료라고 말함</li>
+            <li>Closeout 없이 장기 boundary 변경을 마침</li>
+            <li>ACCEPT를 기능 성공으로만 해석함</li>
+          </ul>
+        </article>
+        <article class="panel">
+          <h3>Boundary 위험</h3>
+          <ul>
+            <li>UI가 Runtime polling/reconnect 책임을 침범함</li>
+            <li>Driver와 Supervisor 책임이 섞임</li>
+            <li>Runtime core에 XGT/DB/payload detail이 들어감</li>
+          </ul>
+        </article>
+        <article class="panel">
+          <h3>Memory 위험</h3>
+          <ul>
+            <li>확정 계약과 임시 아이디어가 섞임</li>
+            <li>ContextPublisher 자동 publish를 재도입했다고 착각함</li>
+            <li>오래된 전제가 현재 작업을 오염시킴</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="source">
+      <div class="section-head">
+        <div>
+          <h2>AGENTS.md 원문 리뷰</h2>
+          <p>리뷰 보드는 요약이고, 최종 판단은 원문 기준으로 한다.</p>
+        </div>
+      </div>
+      <div class="quote">
+        핵심 문장: Codex는 국소 구현을 수행하되, 장기 계약과 하네스 경계를 훼손하지 않아야 한다.
+      </div>
+      <pre class="source"># AGENTS.md
+
+이 문서는 AutomationHub Rebuild 프로젝트에서 Codex가 작업 시작 전 확인해야 하는 최상위 실행 계약이다.
+
+목적은 단순 코드 생성이 아니라, 장기 프로젝트의 맥락, 검증 흐름, 하네스 원칙, Boundary 계약을 보존하는 것이다.
+
+---
+
+## 1. Historical Record Rule
+
+CAAutomationHub Runtime 작업의 primary historical record는 `docs/harness/AH-*.md` Closeout 문서다.
+
+ContextPublisher 자동 publish는 현재 사용하지 않는다.
+다시 필요해지면 사용자 별도 요청 후 재도입한다.
+
+다음 상황에서는 작업 결과를 Closeout 문서 또는 최종 보고에 남긴다.
+
+* 코드 구조 변경 (refactor)
+* 기능 추가 또는 수정
+* 로직 흐름 변경
+* 예외 처리 변경
+* 테스트 보강 또는 시나리오 추가
+* Runtime / Driver / WPF / Harness 경계에 영향을 주는 변경
+
+## 2. Required Behavior
+
+Codex는 코드 변경 작업을 완료한 후 변경 내용, 검증 결과, Harness / Boundary / Validation 영향을 보고해야 한다.
+
+Closeout이 필요한 작업에서는 `docs/harness/AH-*.md` 문서에 historical record를 남긴다.
+
+ContextPublisher 자동 publish, Implementation Event 자동 publish, Verification Event 자동 publish는 현재 작업 절차에 포함하지 않는다.
+
+## 3. Relation to Verification
+
+관련 테스트가 있다면 실행한다.
+
+작업 완료 전에는 빌드 또는 테스트 필요성, 실행 명령과 결과, 변경 파일 목록, Harness / Boundary / Validation 영향, ACCEPT 판정 가능 여부를 확인해야 한다.
+
+## 4. Cognitive Contract Reference
+
+AutomationHub는 단순 기능 모음이 아니라 기존 PLC 중계 구조를 대체하는 장기 Runtime 플랫폼이다.
+
+Long-term cognitive contract 문서:
+
+* docs/context/META_IPRO_CODEX_COGNITIVE_INTERFACE.md
+* docs/context/COGNITIVE_SYNC_CHECK.md
+
+ContextPublisher automatic publish는 현재 disabled / not used 상태다.
+Runtime 작업의 primary historical record는 `docs/harness/AH-*.md` Closeout 문서다.
+
+## 5. Core Invariants
+
+* FlowTest는 독립 실행자가 아니다.
+* FlowTest / Runtime / Simulation은 가능한 한 동일한 실행 경로를 공유해야 한다.
+* Runtime shared execution path를 깨뜨리면 안 된다.
+* Runtime은 canonical state의 중심이다.
+* UI는 Runtime 내부 polling, reconnect, driver 세부 책임을 침범하지 않는다.
+* Driver는 protocol / transport / recovery primitive 책임에 집중한다.
+* Supervisor는 재연결, 회복, 균형, 운영 안정성의 상위 조정자다.
+* FakePlc는 단순 mock이 아니라 통신/장애 시나리오 검증 하네스다.
+* Harness 없는 완료는 완료가 아니다.
+* Verification evidence 없는 완료는 완료가 아니다.
+* ACCEPT는 단순 기능 성공이 아니라 의미, 경계, 검증이 유지되었음을 뜻한다.
+
+## 6. Work Instruction Shape
+
+Codex 작업 지시문은 가능하면 Goal, Context, Constraints, Done when 구조를 따른다.
+
+AutomationHub 작업에서는 Harness, Boundary, Validation, ACCEPT 흐름도 함께 보존한다.
+
+## 7. Boundary Awareness
+
+Runtime, WPF Dashboard, FlowTest, FakePlc, XgtDriverCore, Supervisor 관련 작업 전에는 boundary 영향을 점검한다.
+
+불확실하면 구현하지 말고 Boundary Review로 전환한다.
+
+## 8. Cognitive Sync Awareness
+
+새 세션은 `docs/context/COGNITIVE_SYNC_CHECK.md`의 Cognitive Checksum을 통해 맥락 복원 여부를 검증한다.
+
+## 9. Memory Hygiene Rules
+
+확인된 계약만 Core Invariant에 기록한다.
+불확실한 내용은 확인 필요로 표시한다.
+임시 아이디어와 확정 계약을 분리한다.
+오래된 정보가 현재 작업을 오염시키지 않도록 주의한다.
+
+## 10. Project Goal
+
+Code Change
+-> Test / Build
+-> Verification Evidence
+-> Harness Closeout
+-> Cognitive Contract 유지
+-> ACCEPT 판정
+
+Codex는 국소 구현을 수행하되, 장기 계약과 하네스 경계를 훼손하지 않아야 한다.</pre>
+    </section>
+
+    <footer class="footer">
+      Static review board for AGENTS.md. No server is required.
+    </footer>
+  </main>
+
+  <script>
+    const checklist = [
+      ["Historical record", "Closeout이 필요한 변경은 docs/harness/AH-*.md에 남기는가?"],
+      ["ContextPublisher", "자동 publish가 현재 절차에 포함되지 않는다는 점이 유지되는가?"],
+      ["Verification", "완료 전에 테스트/빌드 필요성, 실행 명령, 결과가 확인되는가?"],
+      ["Boundary", "Runtime / WPF / Driver / FakePlc / Harness 경계를 침범하지 않는가?"],
+      ["Core invariant", "Runtime shared execution path와 canonical state 중심성이 유지되는가?"],
+      ["Harness", "Harness 없는 완료를 완료로 취급하지 않는가?"],
+      ["ACCEPT", "ACCEPT가 기능 성공이 아니라 의미/경계/검증 유지로 해석되는가?"],
+      ["Memory hygiene", "확정 계약, 임시 아이디어, 폐기 방향이 분리되어 있는가?"]
+    ];
+
+    const rules = [
+      {
+        type: "record",
+        title: "Primary historical record",
+        text: "Runtime 작업의 primary historical record는 docs/harness/AH-*.md Closeout 문서다."
+      },
+      {
+        type: "record",
+        title: "ContextPublisher disabled",
+        text: "ContextPublisher 자동 publish는 현재 사용하지 않는다. 재도입은 사용자 별도 요청 후 진행한다."
+      },
+      {
+        type: "verify",
+        title: "Verification evidence",
+        text: "Verification evidence 없는 완료 판정은 금지된다. 관련 테스트가 있으면 실행한다."
+      },
+      {
+        type: "verify",
+        title: "Final report shape",
+        text: "변경 내용, 실행 명령, 테스트/빌드 결과, Harness / Boundary 영향, ACCEPT 판정을 보고한다."
+      },
+      {
+        type: "boundary",
+        title: "Runtime core",
+        text: "Runtime은 canonical state의 중심이며 UI, XGT protocol, DB query detail을 소유하지 않는다."
+      },
+      {
+        type: "boundary",
+        title: "WPF UI",
+        text: "UI는 Runtime 내부 polling, reconnect, driver 세부 책임을 침범하지 않는다."
+      },
+      {
+        type: "boundary",
+        title: "Driver and Supervisor",
+        text: "Driver는 protocol / transport / recovery primitive, Supervisor는 회복 / 재연결 / 운영 안정성 조정자다."
+      },
+      {
+        type: "must",
+        title: "FlowTest and FakePlc",
+        text: "FlowTest는 독립 실행자가 아니며 FakePlc는 통신/장애 시나리오 검증 하네스다."
+      },
+      {
+        type: "must",
+        title: "Boundary Review fallback",
+        text: "Runtime / WPF / Driver / FakePlc / Harness 경계가 불확실하면 구현하지 말고 Boundary Review로 전환한다."
+      },
+      {
+        type: "must",
+        title: "Memory hygiene",
+        text: "확인된 계약과 임시 아이디어를 섞지 않고, 불확실한 내용은 확인 필요로 표시한다."
+      }
+    ];
+
+    const checklistRows = document.getElementById("checklistRows");
+    const storageKey = "automationhub-agents-review-checklist";
+    const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+
+    checklistRows.innerHTML = checklist.map(([title, text], index) => {
+      const checked = saved[index] ? "checked" : "";
+      const doneClass = saved[index] ? " done" : "";
+      const status = saved[index] ? "checked" : "review";
+      return `
+        <label class="check-row${doneClass}" data-index="${index}">
+          <input type="checkbox" ${checked}>
+          <span><strong>${title}</strong><br><span>${text}</span></span>
+          <span class="status-pill">${status}</span>
+        </label>
+      `;
+    }).join("");
+
+    checklistRows.addEventListener("change", (event) => {
+      if (event.target.type !== "checkbox") return;
+      const row = event.target.closest(".check-row");
+      const index = row.dataset.index;
+      saved[index] = event.target.checked;
+      localStorage.setItem(storageKey, JSON.stringify(saved));
+      row.classList.toggle("done", event.target.checked);
+      row.querySelector(".status-pill").textContent = event.target.checked ? "checked" : "review";
+    });
+
+    const ruleGrid = document.getElementById("ruleGrid");
+    const ruleSearch = document.getElementById("ruleSearch");
+    const ruleType = document.getElementById("ruleType");
+
+    function renderRules() {
+      const query = ruleSearch.value.trim().toLowerCase();
+      const type = ruleType.value;
+      ruleGrid.innerHTML = rules.map(rule => {
+        const text = `${rule.type} ${rule.title} ${rule.text}`.toLowerCase();
+        const visible = (type === "all" || type === rule.type) && (!query || text.includes(query));
+        return `
+          <article class="rule-card" data-visible="${visible}">
+            <div class="rule-meta">
+              <span class="pill ${rule.type}">${rule.type}</span>
+              <span class="pill">AGENTS.md</span>
+            </div>
+            <h3>${rule.title}</h3>
+            <p>${rule.text}</p>
+          </article>
+        `;
+      }).join("");
+    }
+
+    ruleSearch.addEventListener("input", renderRules);
+    ruleType.addEventListener("change", renderRules);
+    document.querySelectorAll("button[data-filter]").forEach(button => {
+      button.addEventListener("click", () => {
+        ruleType.value = button.dataset.filter;
+        renderRules();
+      });
+    });
+    renderRules();
+  </script>
+</body>
+</html>
