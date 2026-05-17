@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\CAAutomationHub.FlowDefinitions\CAAutomationHub.FlowDefinitions.csproj" />
     <ProjectReference Include="..\..\src\CAAutomationHub.Runtime\CAAutomationHub.Runtime.csproj" />
   </ItemGroup>
 </Project>
