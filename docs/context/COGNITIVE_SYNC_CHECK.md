@@ -45,12 +45,12 @@
   - commit: fe33af8
   - message: docs: add project documentation review boards
   - 의미: project-document-map.html, agents-review.html 추가
-- 최신 Runtime anchor: AH-RUNTIME-50
-  - commit: 6c027d8
-  - message: docs: close out AH-RUNTIME-50 pilot flow schema draft review
-  - 의미: Pilot Flow Schema Draft Boundary Review closeout
-- 다음 Runtime 목표: AH-RUNTIME-51
-  - 의미: Template / Binding Validation Rule Review
+- 최신 Runtime anchor: AH-RUNTIME-51
+  - commit: 3424507
+  - message: docs: close out AH-RUNTIME-51 template binding validation review
+  - 의미: Template / Binding Validation Rule Review closeout
+- 다음 Runtime 목표: AH-RUNTIME-52
+  - 의미: Validation Rule Matrix Documentation
 
 ## 5. Cognitive Check Questions
 
@@ -62,11 +62,11 @@
 
 ### 2. 최신 Runtime anchor는 무엇인가?
 
-정답: AH-RUNTIME-50 / commit 6c027d8. Pilot Flow Schema Draft Boundary Review closeout이며 schemaVersion / flow / bindings / metadata 구조 후보를 정리했다.
+정답: AH-RUNTIME-51 / commit 3424507. Template / Binding Validation Rule Review closeout이며 validation rule을 Structural Validation, Binding Validation, Policy Validation으로 분류했다.
 
 ### 3. 다음 Runtime 목표는 무엇인가?
 
-정답: AH-RUNTIME-51: Template / Binding Validation Rule Review.
+정답: AH-RUNTIME-52: Validation Rule Matrix Documentation.
 
 ### 4. ContextPublisher 자동 publish는 현재 사용하는가?
 
@@ -78,7 +78,7 @@
 
 ### 6. FLOW.JSON의 장기 분리 방향은 무엇인가?
 
-정답: 장기적으로 flow는 공통 template으로, bindings는 PLC별 binding으로 분리 가능해야 한다. AH-RUNTIME-51은 이 Template / Binding Validation Rule을 검토하는 단계다.
+정답: 장기적으로 flow는 공통 template으로, bindings는 PLC별 binding으로 분리 가능해야 한다. AH-RUNTIME-51은 이 Template / Binding Validation Rule을 검토했고, AH-RUNTIME-52는 validator 구현 전에 rule matrix를 문서화하는 단계다.
 
 ### 7. Runtime core는 FLOW.JSON을 직접 소유하는가?
 
@@ -133,8 +133,8 @@
 새 채팅 동기화 성공 기준:
 
 - 최신 전체 anchor가 DOCS-REVIEW-01 / fe33af8임을 알고 있음
-- 최신 Runtime anchor가 AH-RUNTIME-50 / 6c027d8임을 알고 있음
-- 다음 목표가 AH-RUNTIME-51 Template / Binding Validation Rule Review임을 알고 있음
+- 최신 Runtime anchor가 AH-RUNTIME-51 / 3424507임을 알고 있음
+- 다음 목표가 AH-RUNTIME-52 Validation Rule Matrix Documentation임을 알고 있음
 - ContextPublisher 자동 publish 미사용 정책을 알고 있음
 - docs/harness/AH-RUNTIME-xx.md Closeout이 primary historical record임을 알고 있음
 - FLOW.JSON은 XGT command list가 아니라 PLC별 Business Flow Definition임을 알고 있음
@@ -156,8 +156,8 @@
 - ContextPublisher 자동 publish를 다시 필수라고 말함
 - docs/harness/AH-RUNTIME-xx.md Closeout을 primary historical record로 보지 않음
 - 최신 전체 anchor를 DOCS-REVIEW-01 / fe33af8로 복원하지 못함
-- 최신 Runtime anchor를 AH-RUNTIME-50 / 6c027d8로 복원하지 못함
-- AH-RUNTIME-51 대신 AH-RUNTIME-31이나 구현 단계로 바로 넘어가려 함
+- 최신 Runtime anchor를 AH-RUNTIME-51 / 3424507로 복원하지 못함
+- AH-RUNTIME-52 대신 AH-RUNTIME-31이나 구현 단계로 바로 넘어가려 함
 - FLOW.JSON을 XGT command list로 설명함
 - Runtime core에 FLOW.JSON parser를 넣으려 함
 - Runtime core에 XGT address / DB query / payload layout을 넣으려 함
@@ -227,15 +227,15 @@
 CAAutomationHub Runtime 전환 작업을 이어갑니다.
 
 현재 최신 전체 anchor는 DOCS-REVIEW-01 / commit fe33af8입니다.
-현재 최신 Runtime anchor는 AH-RUNTIME-50 / commit 6c027d8입니다.
-AH-RUNTIME-50은 Pilot Flow Schema Draft Boundary Review closeout이며, FLOW.JSON 후보 구조는 schemaVersion / flow / bindings / metadata입니다.
-다음 Runtime 목표는 AH-RUNTIME-51: Template / Binding Validation Rule Review입니다.
+현재 최신 Runtime anchor는 AH-RUNTIME-51 / commit 3424507입니다.
+AH-RUNTIME-51은 Template / Binding Validation Rule Review closeout이며, validation rule을 Structural Validation, Binding Validation, Policy Validation으로 분류했습니다.
+다음 Runtime 목표는 AH-RUNTIME-52: Validation Rule Matrix Documentation입니다.
 
 ContextPublisher 자동 publish는 현재 사용하지 않습니다.
 Runtime 작업의 primary historical record는 docs/harness/AH-RUNTIME-xx.md Closeout입니다.
 새 채팅 Cognitive Sync는 Handoff 요약만으로 PASS 판정하지 말고 실제 repo 문서와 git 상태를 대조해야 합니다.
 
-먼저 AGENTS.md, docs/context/META_IPRO_CODEX_COGNITIVE_INTERFACE.md, docs/context/COGNITIVE_SYNC_CHECK.md, docs/harness/AH-RUNTIME-50.md 기준으로 현재 인지 상태를 맞추고, 아래 질문에 답해 주세요.
+먼저 AGENTS.md, docs/context/META_IPRO_CODEX_COGNITIVE_INTERFACE.md, docs/context/COGNITIVE_SYNC_CHECK.md, docs/harness/AH-RUNTIME-50.md, docs/harness/AH-RUNTIME-51.md 기준으로 현재 인지 상태를 맞추고, 아래 질문에 답해 주세요.
 
 1. 최신 전체 anchor와 최신 Runtime anchor
 2. 다음 Runtime 목표
