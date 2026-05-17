@@ -1,5 +1,13 @@
 # WPF Runtime Bridge 현재 상태
 
+## 0. Historical Anchor Notice
+- 이 문서는 AH-WPF-24 시점의 WPF -> Runtime 진입 전 anchor다.
+- 현재 Runtime 진행 상태는 이 문서가 아니라 docs/harness/AH-RUNTIME-xx.md Closeout과 최신 Handoff를 우선한다.
+- 이 문서 안의 "CAAutomationHub.Runtime 프로젝트 없음", "다음 권장 단계 AH-RUNTIME-01" 같은 내용은 historical context로만 해석한다.
+- 최신 Runtime anchor는 AH-RUNTIME-50 / commit `6c027d8`이다.
+- 다음 Runtime 후보는 AH-RUNTIME-51 Template / Binding Validation Rule Review다.
+- 새 채팅방 검증 시 이 문서를 최신 Runtime 상태의 source of truth로 사용하지 않는다.
+
 ## 1. 목적
 - 이 문서는 CAAutomationHub WPF Dashboard가 Fake 기반 Prototype에서 Real Runtime Bridge로 넘어가기 직전의 현재 상태를 요약한다.
 - 채팅방 전환이나 다음 Runtime 작업 진입 시 현재 설계 기준을 복원하기 위한 handoff anchor 문서다.
@@ -225,11 +233,16 @@ Push:
 - AH-WPF-23 commit: `6f855f7`
 - AH-WPF-24 commit: `6eb1fa08c60e8b627ae6517c886f57cdbb6bbc23`
 - Working tree: clean
+- Historical note: 위 anchor는 WPF -> Runtime 진입 전 상태를 설명한다.
+- 최신 전체 anchor: DOCS-REVIEW-01 / commit `fe33af8`
+- 최신 Runtime anchor: AH-RUNTIME-50 / commit `6c027d8`
+- 다음 Runtime 후보: AH-RUNTIME-51 Template / Binding Validation Rule Review
 
 ## 13. Notes
-- 이 문서는 최신 상태 요약이다. 상세 구현 이력은 `docs/harness/AH-WPF-xx.md`를 참고한다.
-- 이 문서는 AH-WPF-24 Audit 이후 최신 handoff anchor다.
-- 오래된 설계 문서와 충돌할 경우 이 문서를 최신 current-state anchor로 우선한다.
-- 과거 Closeout 문서와 충돌할 경우에도 이 문서를 최신 current-state anchor로 우선한다.
-- AH-RUNTIME-01 지시문은 이 문서를 기준으로 작성한다.
-- Runtime 구현이 시작되면 이 문서는 주기적으로 갱신될 수 있다.
+- 이 문서는 AH-WPF-24 Audit 이후 WPF -> Runtime 진입 전 handoff anchor다.
+- 상세 WPF 구현 이력은 `docs/harness/AH-WPF-xx.md`를 참고한다.
+- Runtime 진행 상태의 source of truth는 `docs/harness/AH-RUNTIME-xx.md` Closeout과 최신 Handoff다.
+- 이 문서와 최신 AH-RUNTIME Closeout이 충돌하면 최신 AH-RUNTIME Closeout을 우선한다.
+- 새 채팅방 Cognitive Sync 검증 시 이 문서를 최신 Runtime 상태의 source of truth로 사용하지 않는다.
+- "CAAutomationHub.Runtime 프로젝트 없음", "다음 권장 단계 AH-RUNTIME-01" 같은 본문 내용은 AH-WPF-24 시점의 historical context로만 해석한다.
+- 최신 Runtime anchor는 AH-RUNTIME-50 / commit `6c027d8`이며, 다음 Runtime 후보는 AH-RUNTIME-51 Template / Binding Validation Rule Review다.

@@ -86,8 +86,26 @@ AutomationHub 작업에서 아래 원칙은 우선 보존되어야 한다.
 - GetSnapshotAsync는 cache-only다.
 - RefreshSnapshotAsync는 InMemoryAutomationHubSupervisor concrete side-effect API다.
 - Runtime 프로젝트는 CAAutomationHub.Contracts만 참조한다.
+- CAAutomationHub.Runtime core는 vendor-neutral이어야 한다.
+- Runtime core는 XgtDriverCore를 직접 참조하지 않는다.
+- Runtime core는 FakePlc를 직접 참조하지 않는다.
+- Runtime core는 XgtChannelRunner를 직접 참조하지 않는다.
+- ChannelPollingTarget은 PLC-level / PlcId 중심 target model이다.
+- ChannelPollingResult는 PLC-level / vendor-neutral polling event result이다.
+- ChannelPollingResult에 business transaction detail을 넣지 않는다.
+- PollingCycleCoordinator는 ChannelPollingResult batch를 single-writer로 publish하는 boundary다.
+- Pilot business flow는 Runtime polling state path와 구분한다.
+- FLOW.JSON은 XGT command list가 아니라 PLC별 Business Flow Definition이다.
+- 초기 FLOW.JSON 구조는 schemaVersion / flow / bindings / metadata 후보를 따른다.
+- 장기적으로 flow는 공통 template으로, bindings는 PLC별 binding으로 분리 가능해야 한다.
+- Runtime core는 FLOW.JSON parser / XGT execution / DB query / payload layout을 소유하지 않는다.
+- Runtime core는 PLC별 address / payload layout / SQL policy를 알지 않는다.
+- Business flow execution은 Flow Executor / Adapter / Handler 계층에서 담당한다.
+- Flow Executor / Adapter / DB Query / Payload Builder / ACK/Error Writer가 실제 실행 계층이다.
+- WorkStartPilotService.RunOnceAsync(...)는 직접 복사 / 직접 reference 대상이 아니라 검증된 pilot business flow anchor다.
 - ContextPublisher 자동 publish는 현재 사용하지 않는다.
 - docs/harness/AH-RUNTIME-xx.md Closeout이 primary historical record다.
+- 새 채팅방 Cognitive Sync는 Handoff 요약만이 아니라 실제 repo 문서와 git 상태를 대조해야 한다.
 
 ## 5. Current Cognitive Map
 
@@ -100,7 +118,9 @@ AutomationHub 작업에서 아래 원칙은 우선 보존되어야 한다.
         ↓
 [Runtime / Supervisor / ChannelRegistry]
         ↓
-[IRuntimePlcChannel / IWritableRuntimePlcChannel]
+[ChannelPollingTarget / ChannelPollingResult]
+        ↓
+[PollingCycleCoordinator]
         ↓
 [RuntimePlcChannelState]
         ↓
@@ -113,6 +133,20 @@ AutomationHub 작업에서 아래 원칙은 우선 보존되어야 한다.
 [DashboardSnapshot]
         ↓
 [WPF Dashboard UI]
+```
+
+```text
+[PLC별 Business Flow Definition: FLOW.JSON]
+        ↓
+[schemaVersion / flow / bindings / metadata]
+        ↓
+[Template / Binding Validation Rule]
+        ↓
+[Flow Executor / Adapter / Handler]
+        ↓
+[DB Query / Payload Builder / ACK/Error Writer]
+        ↓
+[Vendor-specific driver boundary]
 ```
 
 ```text
@@ -144,12 +178,30 @@ ACCEPT
 
 ### Runtime
 
-- Boundary: Runtime ↔ Channel / Supervisor
-- 허용되는 책임: canonical state 관리, channel registry 관리, snapshot cache/publish orchestration, supervisor lifecycle coordination.
-- 금지되는 책임: XGT protocol/transport primitive 직접 구현, WPF UI 책임 수행.
+- Boundary: Runtime ↔ Channel / Supervisor / Polling coordination
+- 허용되는 책임: canonical state 관리, channel registry 관리, snapshot cache/publish orchestration, supervisor lifecycle coordination, vendor-neutral polling event publish coordination.
+- 금지되는 책임: XGT protocol/transport primitive 직접 구현, WPF UI 책임 수행, FLOW.JSON parser 소유, XGT-specific flow execution 소유, PLC별 address / payload layout / SQL policy / DB query 소유.
 - 검증 방법: Runtime unit tests, supervisor/channel registry tests, polling coordinator tests, project reference 확인.
 - 관련 Harness: CAAutomationHub.Runtime.Tests, docs/harness/AH-RUNTIME-xx.md Closeout.
-- 확인 필요: AH-RUNTIME-31 이후 mapper/polling result 경계와 timer/loop 도입 시점.
+- 확인 필요: AH-RUNTIME-51 이후 Template / Binding Validation Rule이 parser/executor 구현으로 너무 빨리 비약하지 않도록 단계 분리 필요.
+
+### Business Flow Definition / FLOW.JSON
+
+- Boundary: Business Flow Definition ↔ Flow Executor / Adapter / Handler
+- 허용되는 책임: PLC별 업무 흐름을 schemaVersion / flow / bindings / metadata 구조로 표현한다.
+- 금지되는 책임: XGT command list로 축소, Runtime core 내부 parser로 흡수, Runtime polling state path와 혼합.
+- 검증 방법: Boundary Review, Pilot Flow Scenario Matrix, Template / Binding Validation Rule Review.
+- 관련 Harness: docs/harness/AH-RUNTIME-47.md, AH-RUNTIME-48.md, AH-RUNTIME-49.md, AH-RUNTIME-50.md.
+- 확인 필요: 실제 FLOW.JSON 파일, JSON schema file, parser, executor는 아직 구현하지 않았다.
+
+### Pilot Business Flow
+
+- Boundary: Pilot business flow ↔ Runtime polling state path
+- 허용되는 책임: WorkStart verified flow와 사용자 business anchor를 Source / EvidenceLevel / PolicyStatus로 구분해 pilot scenario matrix에 남긴다.
+- 금지되는 책임: WorkStartPilotService.RunOnceAsync(...)를 Runtime core에 그대로 source copy하거나 직접 reference 대상으로 삼지 않는다.
+- 검증 방법: Pilot Flow Scenario Matrix와 AH-RUNTIME-50 closeout 대조.
+- 관련 Harness: docs/harness/AH-RUNTIME-47.md, AH-RUNTIME-50.md.
+- 확인 필요: 전체 업무 흐름은 Polling request detection, 착공요청 ON, 착공ACK OFF, 완공요청 ON, 완공ACK OFF, 대기 복귀를 포함한다.
 
 ### XgtDriverCore
 
@@ -175,62 +227,51 @@ ACCEPT
 - XgtDriverCore는 protocol / transport / recovery 의미를 보존해야 한다.
 - Runtime harness는 실제 운영 경로와 divergence가 생기면 안 된다.
 - WPF 테스트는 Runtime 상태를 UI에 표현하는 계약을 검증한다.
-- RED → GREEN → Closeout 흐름을 유지한다.
+- FLOW.JSON 관련 작업은 Boundary Review와 Closeout을 통해 Business Flow Definition / Template / Binding 경계를 먼저 고정한다.
+- 새 채팅방 Cognitive Sync는 Handoff 요약만이 아니라 실제 repo 문서와 git 상태를 대조한다.
+- RED -> GREEN -> Closeout 흐름을 유지한다.
 - Verification-before-completion을 유지한다.
 - Evidence 없이 완료 판정은 금지한다.
 - 판정 언어는 ACCEPT / ACCEPT_WITH_CORRECTION / REPAIR_REQUIRED / HOLD를 유지한다.
 
 ## 8. Active Goals / Recent Anchors
 
-### AH-RUNTIME-30
+### DOCS-REVIEW-01
 
-- Goal ID: AH-RUNTIME-30
-- 상태: 완료
-- 핵심 의미: IWritableRuntimePlcChannel.GetRuntimeState 구현. RuntimePlcChannelState readback API를 writable channel boundary에 추가했다.
-- 연결된 계약: IRuntimePlcChannel read-only 유지, IWritableRuntimePlcChannel optional writable boundary, GetState(capturedAt) / GetRuntimeState() 의미 분리, update/publish 분리 유지.
-- 검증 증거: Runtime/WPF tests 및 build 통과 기록은 docs/harness/AH-RUNTIME-30.md에 보존. commit 289633d4f94f5fa8be73eee85acb8b38c6693ba2.
-- 다음 연결: AH-RUNTIME-31의 RuntimePlcChannelStateMapper가 previous RuntimePlcChannelState를 참조할 수 있는 기반.
-- 확인 필요: AH-RUNTIME-30 당시 전체 closeout은 ContextPublisher 이슈로 ACCEPT_WITH_CORRECTION으로 다뤄진 맥락이 있었으나, AH-RUNTIME-30-3 이후 현재 정책에서는 코드/테스트 ACCEPT와 ContextPublisher 자동 publish 미사용 정책이 분리된다.
+- Goal ID: DOCS-REVIEW-01
+- 상태: 최신 전체 anchor
+- commit: fe33af8
+- message: docs: add project documentation review boards
+- 핵심 의미: project-document-map.html, agents-review.html 추가.
+- 역할: 문서 지도 / AGENTS 리뷰 보드.
+- 연결된 계약: 새 채팅방은 Handoff 요약만 보지 말고 실제 repo 문서와 git 상태를 대조해야 한다.
 
-### AH-RUNTIME-30-1
+### AH-RUNTIME-50
 
-- Goal ID: AH-RUNTIME-30-1
-- 상태: 완료
-- 핵심 의미: ContextPublisher 실패 원인을 Runtime 코드 실패와 분리했다.
-- 연결된 계약: Runtime 구현/검증 흐름과 context publishing pipeline을 혼동하지 않는다.
-- 검증 증거: docs/harness/AH-RUNTIME-30-1.md, commit 59ad078487048abbb0ac4e629b3fed1828e27466.
-- 다음 연결: ContextPublisher 재도입은 별도 Boundary Review가 필요하다.
-- 확인 필요: 재도입 요청이 있을 때 repo root / target document / target section 계약 재검토 필요.
+- Goal ID: AH-RUNTIME-50
+- 상태: 최신 Runtime anchor
+- commit: 6c027d8
+- message: docs: close out AH-RUNTIME-50 pilot flow schema draft review
+- 핵심 의미: Pilot Flow Schema Draft Boundary Review closeout.
+- 핵심 구조: schemaVersion / flow / bindings / metadata.
+- 연결된 계약: FLOW.JSON은 XGT command list가 아니라 PLC별 Business Flow Definition이다. Runtime core는 parser / XGT execution / DB query / payload layout을 소유하지 않는다.
+- 다음 연결: AH-RUNTIME-51 Template / Binding Validation Rule Review.
 
-### AH-RUNTIME-30-2
+### AH-RUNTIME-51
 
-- Goal ID: AH-RUNTIME-30-2
-- 상태: 완료
-- 핵심 의미: ContextPublisher target contract repair plan 및 후보 전략을 정리했다.
-- 연결된 계약: WPF_RUNTIME_BRIDGE_CURRENT_STATE.md는 current-state handoff anchor이고, Runtime 작업 primary historical record는 docs/harness closeout이다.
-- 검증 증거: docs/harness/AH-RUNTIME-30-2.md, commit 7abfb40ce7cb210655f5e285fcbd5e3e345eb0af.
-- 다음 연결: ContextPublisher 자동 publish 미사용 정책으로 이어짐.
-- 확인 필요: 재도입 시 CAAutomationHub 전용 context event contract 필요 여부.
+- Goal ID: AH-RUNTIME-51
+- 상태: 다음 Runtime 목표
+- 핵심 의미: Template / Binding Validation Rule Review.
+- 연결된 계약: flow template과 PLC별 bindings의 분리 가능성, validation rule, source/evidence/policy status 경계를 검토한다.
+- 주의: schema/parser/executor 구현으로 바로 뛰어들지 않는다.
 
-### AH-RUNTIME-30-3
-
-- Goal ID: AH-RUNTIME-30-3
-- 상태: 완료
-- 핵심 의미: ContextPublisher 자동 publish 미사용 정책을 반영했다.
-- 연결된 계약: Implementation / Verification Event 자동 publish 요구 제거, docs/harness Closeout primary historical record 유지.
-- 검증 증거: docs/harness/AH-RUNTIME-30-3.md, commit c3626e97328f2c1854c37cfe8d8b6828c6113fda.
-- 다음 연결: AH-RUNTIME-31은 ContextPublisher 보정 선결 조건 없이 진행 가능.
-- 확인 필요: ContextPublisher 관련 작업은 사용자 별도 요청 전까지 진행하지 않는다.
-
-### AH-RUNTIME-31
+### Archived / Historical: AH-RUNTIME-31
 
 - Goal ID: AH-RUNTIME-31
-- 상태: 다음 후보
-- 핵심 의미: ChannelPollingResult / ChannelPollingFailureKind / RuntimePlcChannelStateMapper Skeleton.
-- 연결된 계약: previous RuntimePlcChannelState를 보존하며 polling 결과를 RuntimePlcChannelState로 매핑하는 boundary를 세운다.
-- 검증 증거: 아직 없음.
-- 다음 연결: Polling result mapper tests, XgtRuntimePlcChannelAdapter boundary review.
-- 확인 필요: PollingScheduler timer/loop는 너무 일찍 구현하지 않는다. mapper가 previous state 없이 stateless로 구현되어 누적 상태가 깨지지 않도록 해야 한다.
+- 상태: 완료된 과거 작업
+- 과거 의미: ChannelPollingResult / ChannelPollingFailureKind / RuntimePlcChannelStateMapper Skeleton.
+- 현재 의미: 더 이상 next goal로 사용하지 않는다.
+- 주의: 새 채팅방이 AH-RUNTIME-31을 다음 목표로 제시하면 오래된 문맥을 복원한 것으로 보고 보정한다.
 
 ## 9. Implemented / Not Yet Implemented / Risk Map
 
@@ -253,18 +294,28 @@ ACCEPT
 - PollingPublishCoordinator
 - PollingChannelUpdate
 - PollingPublishResult
+- ChannelPollingResult
+- ChannelPollingFailureKind
+- RuntimePlcChannelStateMapper
+- PollingResultStateOrchestrator
+- PollingResultStateOrchestrator batch support
+- PollingCycleCoordinator
+- ChannelPollingTarget
+- IPollingTargetProvider
+- RuntimeChannelPollingTargetProvider
 - DashboardRuntimeCompositionFactory
 - DashboardRuntimeCapabilities
+- Pilot Flow Scenario Matrix 문서화
+- FLOW.JSON Boundary Review
+- FLOW.JSON Template vs Binding Boundary Review
+- Pilot Flow Schema Draft Boundary Review
+- Documentation review boards
 - ContextPublisher 자동 publish 미사용 정책
 
 ### Not Yet Implemented
 
-- ChannelPollingResult
-- ChannelPollingFailureKind
-- RuntimePlcChannelStateMapper
-- Polling result mapper tests
-- actual PollingScheduler timer/loop
-- XgtRuntimePlcChannelAdapter
+- actual PollingScheduler timer / loop
+- XgtRuntimePlcChannelAdapter 또는 XgtAdapter
 - XgtDriverCore integration
 - XgtChannelRunner integration
 - FakePlc integration
@@ -274,6 +325,15 @@ ACCEPT
 - WPF actual App wiring
 - runtime mode opt-in
 - DashboardViewModel capability injection
+- FLOW.JSON parser
+- Flow Executor
+- PilotFlow class
+- JSON schema file
+- actual FLOW.JSON files
+- DB Query Abstraction implementation
+- XGT Operation Adapter implementation
+- Payload Builder extraction
+- ACK/Error Writer implementation
 
 ### Risk / Drift Zone
 
@@ -290,6 +350,15 @@ ACCEPT
 - ContextPublisher 실패를 Runtime 코드 실패로 오해하는 상황
 - PollingScheduler를 너무 일찍 timer/loop로 구현하는 상황
 - RuntimePlcChannelStateMapper가 previous state 없이 stateless로 구현되어 누적 상태가 깨지는 상황
+- FLOW.JSON이 XGT command list로 변질
+- Runtime core가 FLOW.JSON parser를 소유
+- Runtime core가 XGT address / DB query / payload layout을 소유
+- ChannelPollingResult에 business transaction detail이 섞임
+- Pilot business flow와 Runtime polling state path가 섞임
+- WorkStartPilotService를 그대로 source copy
+- Handoff 검증이 문서/깃 대조 없이 요약으로만 끝남
+- AH-RUNTIME-51 전에 schema/parser/executor 구현으로 뛰어듦
+- WPF_RUNTIME_BRIDGE_CURRENT_STATE.md를 최신 Runtime source of truth로 오해
 
 ## 10. Memory Hygiene Rules
 
@@ -311,27 +380,30 @@ ACCEPT
 새 채팅방 이동 전 절차:
 
 1. 현재 Goal 상태 확인
-2. 변경 파일 목록 확인
-3. 테스트/빌드 결과 확인
-4. ACCEPT 또는 ACCEPT_WITH_CORRECTION 판정
-5. 구현된 것 / 미구현 / 위험영역 분리
-6. Cognitive Map 갱신
-7. 다음 채팅방용 Bootstrap Summary 생성
-8. COGNITIVE_SYNC_CHECK.md 기준으로 복원 검증
-9. 실패 시 기존 긴 맥락 채팅방으로 돌아와 보정
+2. 최신 전체 anchor와 최신 Runtime anchor 확인
+3. git log --oneline -5 확인
+4. git status --short 확인
+5. 변경 파일 목록 확인
+6. 테스트/빌드 결과 확인
+7. ACCEPT 또는 ACCEPT_WITH_CORRECTION 판정
+8. 구현된 것 / 미구현 / 위험영역 분리
+9. Cognitive Map 갱신
+10. 다음 채팅방용 Bootstrap Summary 생성
+11. COGNITIVE_SYNC_CHECK.md 기준으로 복원 검증
+12. Handoff만 요약하지 말고 실제 문서 / git 상태를 대조
+13. 검증 결과를 PASS / PARTIAL / FAIL로 작성
+14. PASS 전에는 AH-RUNTIME-51 구현으로 넘어가지 않음
+15. 실패 시 기존 긴 맥락 채팅방으로 돌아와 보정
 
 ## 12. Cross-Chat Recovery Contract
 
 새 채팅방의 Cognitive Sync 응답은 장기 맥락 복원 결과물이며, 필요하면 이전 채팅방 또는 기준 채팅방으로 되가져와 검증한다.
 
-이 검증은 단순 문답 확인이 아니라 cognitive checksum이다.
-새 채팅방이 완료 상태, 금지 범위, 다음 목표, Runtime / WPF / Driver / FakePlc / Harness 경계, commit / 문서 anchor를 같은 의미로 복원했는지 확인한다.
+이 검증은 단순 문답 확인이 아니라 cognitive checksum이다. 새 채팅방이 완료 상태, 금지 범위, 다음 목표, Runtime / WPF / Driver / FakePlc / Harness 경계, commit / 문서 anchor를 같은 의미로 복원했는지 확인한다.
 
-판정은 PASS / PARTIAL / FAIL 정도로 표현할 수 있다.
-PARTIAL 또는 FAIL이면 Handoff 메시지나 context 문서를 보정하고, 보정된 내용을 다음 전환에 반영한다.
+판정은 PASS / PARTIAL / FAIL로 표현한다. PASS는 Handoff 요약만으로 줄 수 없고, 실제 repo 문서와 git 상태 대조가 필요하다. PARTIAL 또는 FAIL이면 Handoff 메시지나 context 문서를 보정하고, 보정된 내용을 다음 전환에 반영한다.
 
-이 루틴은 Codex가 국소 문서 입자만 읽고 장기 계약의 연결선을 잃는 drift를 줄이기 위한 recovery contract다.
-Compact Mode / Full Context Mode / Delta Mode 정책을 바꾸지 않으며, ContextPublisher 자동 publish 재도입을 뜻하지 않는다.
+이 루틴은 Codex가 국소 문서 입자만 읽고 장기 계약의 연결선을 잃는 drift를 줄이기 위한 recovery contract다. Compact Mode / Full Context Mode / Delta Mode 정책을 바꾸지 않으며, ContextPublisher 자동 publish 재도입을 뜻하지 않는다.
 
 ## 13. Codex Instruction Length Policy
 
@@ -375,12 +447,19 @@ Verification evidence 없는 완료 판정은 금지한다.
 불확실한 내용은 확인 필요로 표시한다.
 Codex Self-Check 판정은 작업자 자기검증이며, 최종 승인 여부는 사용자 검토 후 결정한다."
 
-## 14. Next Step
-
-다음 문서:
-
-- docs/context/COGNITIVE_SYNC_CHECK.md
+## 14. Current Next Step
 
 다음 Runtime:
 
-- AH-RUNTIME-31: ChannelPollingResult / ChannelPollingFailureKind / RuntimePlcChannelStateMapper Skeleton
+- AH-RUNTIME-51: Template / Binding Validation Rule Review
+
+현재 금지된 비약:
+
+- FLOW.JSON parser 구현
+- Flow Executor 구현
+- JSON schema file 생성
+- actual FLOW.JSON files 생성
+- XGT Adapter 구현
+- DB Query 구현
+- Payload Builder extraction
+- WorkStartPilotService source copy
