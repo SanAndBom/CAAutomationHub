@@ -2,7 +2,7 @@ using CAAutomationHub.Runtime.Channels;
 
 namespace CAAutomationHub.Runtime.Polling;
 
-public sealed class PollingResultStateOrchestrator
+public sealed class PollingResultStateOrchestrator : IPollingResultBatchPublisher
 {
     private readonly RuntimeChannelRegistry _channelRegistry;
     private readonly PollingPublishCoordinator _publishCoordinator;
