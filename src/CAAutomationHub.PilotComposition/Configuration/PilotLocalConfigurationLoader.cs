@@ -65,5 +65,11 @@ public static class PilotLocalConfigurationLoader
         {
             throw new InvalidOperationException("Pilot LOT ID word length must be greater than zero.");
         }
+
+        if (configuration.Db.Mode == PilotDatabaseMode.SqlServer
+            && string.IsNullOrWhiteSpace(configuration.Db.EffectiveConnectionStringEnvironmentVariable))
+        {
+            throw new InvalidOperationException("Pilot SQL Server DB mode requires a connection string environment variable name.");
+        }
     }
 }

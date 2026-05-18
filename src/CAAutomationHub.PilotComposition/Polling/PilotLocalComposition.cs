@@ -2,6 +2,7 @@ using CAAutomationHub.PilotApp.Polling;
 using CAAutomationHub.PilotApp.WorkStart;
 using CAAutomationHub.PilotComposition.Configuration;
 using CAAutomationHub.PilotFlows.WorkComplete;
+using CAAutomationHub.PilotFlows.SqlServer.WorkStart;
 using CAAutomationHub.PilotFlows.WorkStart;
 using CAAutomationHub.PilotFlows.Xgt.Polling;
 using CAAutomationHub.PilotFlows.Xgt.WorkComplete;
@@ -12,13 +13,19 @@ namespace CAAutomationHub.PilotComposition.Polling;
 public static class PilotLocalComposition
 {
     public static PilotPollingComposition Create(PilotLocalConfiguration configuration)
+        => Create(configuration, Environment.GetEnvironmentVariable);
+
+    public static PilotPollingComposition Create(
+        PilotLocalConfiguration configuration,
+        Func<string, string?> getEnvironmentVariable)
     {
+        ArgumentNullException.ThrowIfNull(getEnvironmentVariable);
         PilotLocalConfigurationLoader.Validate(configuration);
 
         return configuration.Profile switch
         {
             PilotProfileKind.Fake => CreateFake(configuration),
-            PilotProfileKind.FakePlcLocal => CreateFakePlcLocal(configuration),
+            PilotProfileKind.FakePlcLocal => CreateFakePlcLocal(configuration, getEnvironmentVariable),
             PilotProfileKind.RealReadOnly => throw new NotSupportedException(
                 "RealReadOnly pilot profile is not enabled in AH-PILOT-LIVE fast track."),
             PilotProfileKind.RealPilot => throw new NotSupportedException(
@@ -39,7 +46,9 @@ public static class PilotLocalComposition
             "Fake pilot polling profile loaded.");
     }
 
-    private static PilotPollingComposition CreateFakePlcLocal(PilotLocalConfiguration configuration)
+    private static PilotPollingComposition CreateFakePlcLocal(
+        PilotLocalConfiguration configuration,
+        Func<string, string?> getEnvironmentVariable)
     {
         if (!IsLoopbackHost(configuration.Plc.Host))
         {
@@ -73,7 +82,7 @@ public static class PilotLocalComposition
 
         var workStartFlow = new WorkStartFlowService(
             operations.StartAckOnOperations,
-            new FakeWorkStartDataQuery(),
+            CreateWorkStartDataQuery(configuration.Db, getEnvironmentVariable),
             workStartOptions);
         var workStartExecutionService = new WorkStartExecutionService(
             new WorkStartFlowServiceRunner(workStartFlow));
@@ -100,7 +109,43 @@ public static class PilotLocalComposition
         return new PilotPollingComposition(
             service,
             configuration,
-            $"FakePlcLocal pilot polling profile loaded for {configuration.Plc.Host}:{configuration.Plc.Port}.");
+            $"FakePlcLocal pilot polling profile loaded for {configuration.Plc.Host}:{configuration.Plc.Port} with {configuration.Db.Mode} DB mode.");
+    }
+
+    private static IWorkStartDataQuery CreateWorkStartDataQuery(
+        PilotDatabaseConfiguration configuration,
+        Func<string, string?> getEnvironmentVariable)
+    {
+        return configuration.Mode switch
+        {
+            PilotDatabaseMode.Fake => new FakeWorkStartDataQuery(),
+            PilotDatabaseMode.Environment => new FakeWorkStartDataQuery(),
+            PilotDatabaseMode.SqlServer => CreateSqlServerWorkStartDataQuery(configuration, getEnvironmentVariable),
+            _ => throw new NotSupportedException($"Pilot DB mode '{configuration.Mode}' is not supported.")
+        };
+    }
+
+    private static SqlServerWorkStartDataQuery CreateSqlServerWorkStartDataQuery(
+        PilotDatabaseConfiguration configuration,
+        Func<string, string?> getEnvironmentVariable)
+    {
+        var environmentVariableName = configuration.EffectiveConnectionStringEnvironmentVariable;
+        if (string.IsNullOrWhiteSpace(environmentVariableName))
+        {
+            throw new InvalidOperationException("Pilot SQL Server DB mode requires a connection string environment variable name.");
+        }
+
+        var connectionString = getEnvironmentVariable(environmentVariableName);
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException($"Pilot SQL Server DB connection string environment variable '{environmentVariableName}' is not set.");
+        }
+
+        return new SqlServerWorkStartDataQuery(new SqlServerWorkStartDataQueryOptions
+        {
+            ConnectionString = connectionString,
+            SqlText = WorkStartSqlQueryText.Default
+        });
     }
 
     private static bool IsLoopbackHost(string host) =>

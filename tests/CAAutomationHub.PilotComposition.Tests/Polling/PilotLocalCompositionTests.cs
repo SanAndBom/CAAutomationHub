@@ -37,6 +37,48 @@ public sealed class PilotLocalCompositionTests
     }
 
     [Fact]
+    public void CreatePollingService_WithFakePlcLocalAndSqlServerMode_RequiresConnectionEnvironmentVariable()
+    {
+        var configuration = CreateConfiguration(PilotProfileKind.FakePlcLocal) with
+        {
+            Db = new PilotDatabaseConfiguration
+            {
+                Mode = PilotDatabaseMode.SqlServer,
+                ConnectionStringEnvironmentVariable = "CAAH_WORKSTART_DB_CONNECTION_STRING"
+            }
+        };
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            PilotLocalComposition.Create(configuration, static _ => null));
+
+        Assert.Contains("CAAH_WORKSTART_DB_CONNECTION_STRING", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("placeholder-connection-token", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void CreatePollingService_WithFakePlcLocalAndSqlServerMode_ComposesWithoutOpeningDatabase()
+    {
+        var configuration = CreateConfiguration(PilotProfileKind.FakePlcLocal) with
+        {
+            Db = new PilotDatabaseConfiguration
+            {
+                Mode = PilotDatabaseMode.SqlServer,
+                ConnectionStringEnvironmentVariable = "CAAH_WORKSTART_DB_CONNECTION_STRING"
+            }
+        };
+
+        var composition = PilotLocalComposition.Create(
+            configuration,
+            static name => name == "CAAH_WORKSTART_DB_CONNECTION_STRING"
+                ? "placeholder-connection-token"
+                : null);
+
+        Assert.NotNull(composition.PollingService);
+        Assert.Contains("SqlServer", composition.StatusMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("localhost:2004", composition.StatusMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task PollOnce_WithFakePlcLocalProfileAndNoListener_ReturnsFailedSnapshot()
     {
         var configuration = CreateConfiguration(PilotProfileKind.FakePlcLocal) with
@@ -86,7 +128,7 @@ public sealed class PilotLocalCompositionTests
             Db = new PilotDatabaseConfiguration
             {
                 Mode = PilotDatabaseMode.Fake,
-                ConnectionEnvironmentVariable = "CAAH_WORKSTART_DB_CONNECTION_STRING"
+                ConnectionStringEnvironmentVariable = "CAAH_WORKSTART_DB_CONNECTION_STRING"
             }
         };
 

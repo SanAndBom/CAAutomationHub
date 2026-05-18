@@ -22,8 +22,8 @@ public sealed class PilotLocalConfigurationLoaderTests
         Assert.Equal(0, configuration.Plc.LotId1WordOffset);
         Assert.Equal(10, configuration.Plc.LotId2WordOffset);
         Assert.Equal(6, configuration.Plc.LotIdWordLength);
-        Assert.Equal(PilotDatabaseMode.Fake, configuration.Db.Mode);
-        Assert.Equal("CAAH_WORKSTART_DB_CONNECTION_STRING", configuration.Db.ConnectionEnvironmentVariable);
+        Assert.Equal(PilotDatabaseMode.SqlServer, configuration.Db.Mode);
+        Assert.Equal("CAAH_WORKSTART_DB_CONNECTION_STRING", configuration.Db.ConnectionStringEnvironmentVariable);
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class PilotLocalConfigurationLoaderTests
               },
               "db": {
                 "mode": "Fake",
-                "connectionEnvironmentVariable": "CAAH_WORKSTART_DB_CONNECTION_STRING"
+                "connectionStringEnvironmentVariable": "CAAH_WORKSTART_DB_CONNECTION_STRING"
               }
             }
             """);
@@ -79,7 +79,7 @@ public sealed class PilotLocalConfigurationLoaderTests
 
         Assert.DoesNotContain(propertyNames, static name => name.Equals("Value", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(propertyNames, static name => name.Contains("Secret", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(nameof(PilotDatabaseConfiguration.ConnectionEnvironmentVariable), propertyNames);
+        Assert.Contains(nameof(PilotDatabaseConfiguration.ConnectionStringEnvironmentVariable), propertyNames);
     }
 
     private static string FindRepositoryFile(params string[] relativePathParts)

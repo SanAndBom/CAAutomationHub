@@ -13,7 +13,7 @@
     "lotIdWordLength": 6
   },
   "db": {
-    "mode": "Fake",
-    "connectionEnvironmentVariable": "CAAH_WORKSTART_DB_CONNECTION_STRING"
+    "mode": "SqlServer",
+    "connectionStringEnvironmentVariable": "CAAH_WORKSTART_DB_CONNECTION_STRING"
   }
 }

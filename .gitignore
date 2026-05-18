@@ -12,6 +12,8 @@
 *.env
 appsettings.local.json
 config/pilot.local.json
+config/*.local.json
+*.user.local.json
 .local/
 
 # User-specific files (MonoDevelop/Xamarin Studio)

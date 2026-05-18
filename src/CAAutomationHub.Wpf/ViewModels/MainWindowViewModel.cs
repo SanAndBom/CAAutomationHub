@@ -121,7 +121,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             Db = new PilotDatabaseConfiguration
             {
                 Mode = PilotDatabaseMode.Fake,
-                ConnectionEnvironmentVariable = "CAAH_WORKSTART_DB_CONNECTION_STRING"
+                ConnectionStringEnvironmentVariable = "CAAH_WORKSTART_DB_CONNECTION_STRING"
             }
         };
 
