@@ -13,6 +13,8 @@ public sealed class PilotLocalConfigurationLoaderTests
 
         Assert.Equal(PilotProfileKind.FakePlcLocal, configuration.Profile);
         Assert.Equal("fakeplc-local", configuration.Plc.TargetId);
+        Assert.Equal("Fake PLC Local", configuration.Plc.DisplayName);
+        Assert.Equal("Local Test", configuration.Plc.LineName);
         Assert.Equal("localhost", configuration.Plc.Host);
         Assert.Equal(2004, configuration.Plc.Port);
         Assert.Equal("%DB10000", configuration.Plc.ReadStartVariable);

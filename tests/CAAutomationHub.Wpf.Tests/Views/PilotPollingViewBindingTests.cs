@@ -44,9 +44,35 @@ public sealed class PilotPollingViewBindingTests
             .ToArray();
 
         Assert.Contains("{Binding PlcCardTargetId}", textValues);
-        Assert.Contains("{Binding PlcCardTargetLabel}", textValues);
+        Assert.Contains("{Binding PlcCardDisplayName}", textValues);
+        Assert.Contains("{Binding PlcCardLineName}", textValues);
+        Assert.Contains("{Binding PlcCardHostPort}", textValues);
         Assert.Contains("{Binding PlcCardConnectionStatus}", textValues);
         Assert.Contains("{Binding PlcCardLastReadResultStatus}", textValues);
+    }
+
+    [Fact]
+    public void PilotPlcDetail_BindsToSamePilotCardSnapshot()
+    {
+        var document = XDocument.Load(FindRepositoryFile(
+            "src",
+            "CAAutomationHub.Wpf",
+            "Views",
+            "Pilot",
+            "PilotPollingView.xaml"));
+
+        var textValues = document
+            .Descendants()
+            .Select(element => (string?)element.Attribute("Text"))
+            .Where(text => text is not null)
+            .Cast<string>()
+            .ToArray();
+
+        Assert.Contains("{Binding PlcDetailDisplayName}", textValues);
+        Assert.Contains("{Binding PlcDetailHostPort}", textValues);
+        Assert.Contains("{Binding PlcDetailPollingStatus}", textValues);
+        Assert.Contains("{Binding PlcDetailLastResponse}", textValues);
+        Assert.Contains("{Binding PlcDetailLastMessage}", textValues);
     }
 
     [Fact]

@@ -4,6 +4,10 @@ public sealed record PilotPlcTargetConfiguration
 {
     public required string TargetId { get; init; }
 
+    public string? DisplayName { get; init; }
+
+    public string? LineName { get; init; }
+
     public required string Host { get; init; }
 
     public required int Port { get; init; }

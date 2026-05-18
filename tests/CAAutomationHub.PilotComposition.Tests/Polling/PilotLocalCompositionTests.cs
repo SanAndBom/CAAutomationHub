@@ -37,6 +37,27 @@ public sealed class PilotLocalCompositionTests
     }
 
     [Fact]
+    public void CreatePollingService_MapsConfigDisplayFieldsToInitialPilotCard()
+    {
+        var configuration = CreateConfiguration(PilotProfileKind.FakePlcLocal) with
+        {
+            Plc = CreatePlcConfiguration() with
+            {
+                DisplayName = "Fake PLC Local",
+                LineName = "Local Test"
+            }
+        };
+
+        var composition = PilotLocalComposition.Create(configuration);
+        var card = composition.PollingService.CurrentSnapshot.PlcCardStatus;
+
+        Assert.Equal("fakeplc-local", card.TargetId);
+        Assert.Equal("Fake PLC Local", card.DisplayName);
+        Assert.Equal("Local Test", card.LineName);
+        Assert.Equal("localhost:2004", card.HostPort);
+    }
+
+    [Fact]
     public void CreatePollingService_WithFakePlcLocalAndSqlServerMode_RequiresConnectionEnvironmentVariable()
     {
         var configuration = CreateConfiguration(PilotProfileKind.FakePlcLocal) with
@@ -136,6 +157,8 @@ public sealed class PilotLocalCompositionTests
         new()
         {
             TargetId = "fakeplc-local",
+            DisplayName = "Fake PLC Local",
+            LineName = "Local Test",
             Host = "localhost",
             Port = 2004,
             ReadStartVariable = "%DB10000",

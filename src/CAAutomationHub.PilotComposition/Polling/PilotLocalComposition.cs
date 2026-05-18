@@ -41,7 +41,10 @@ public static class PilotLocalComposition
             new PilotPollingOptions
             {
                 TargetId = configuration.Plc.TargetId,
-                TargetLabel = CreateTargetLabel(configuration)
+                TargetLabel = CreateTargetLabel(configuration),
+                DisplayName = CreateDisplayName(configuration),
+                LineName = CreateLineName(configuration),
+                HostPort = CreateHostPort(configuration)
             });
 
         return new PilotPollingComposition(
@@ -111,7 +114,10 @@ public static class PilotLocalComposition
             new PilotPollingOptions
             {
                 TargetId = configuration.Plc.TargetId,
-                TargetLabel = CreateTargetLabel(configuration)
+                TargetLabel = CreateTargetLabel(configuration),
+                DisplayName = CreateDisplayName(configuration),
+                LineName = CreateLineName(configuration),
+                HostPort = CreateHostPort(configuration)
             });
 
         return new PilotPollingComposition(
@@ -162,7 +168,20 @@ public static class PilotLocalComposition
         || host.Equals("::1", StringComparison.OrdinalIgnoreCase);
 
     private static string CreateTargetLabel(PilotLocalConfiguration configuration) =>
+        CreateHostPort(configuration);
+
+    private static string CreateHostPort(PilotLocalConfiguration configuration) =>
         $"{configuration.Plc.Host}:{configuration.Plc.Port}";
+
+    private static string CreateDisplayName(PilotLocalConfiguration configuration) =>
+        string.IsNullOrWhiteSpace(configuration.Plc.DisplayName)
+            ? configuration.Plc.TargetId
+            : configuration.Plc.DisplayName;
+
+    private static string CreateLineName(PilotLocalConfiguration configuration) =>
+        string.IsNullOrWhiteSpace(configuration.Plc.LineName)
+            ? configuration.Plc.TargetId
+            : configuration.Plc.LineName;
 
     private sealed class FakePilotPollingFlowPort : IPilotPollingFlowPort
     {

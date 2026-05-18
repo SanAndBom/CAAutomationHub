@@ -2,6 +2,8 @@
   "profile": "FakePlcLocal",
   "plc": {
     "targetId": "fakeplc-local",
+    "displayName": "Fake PLC Local",
+    "lineName": "Local Test",
     "host": "localhost",
     "port": 2004,
     "readStartVariable": "%DB10000",

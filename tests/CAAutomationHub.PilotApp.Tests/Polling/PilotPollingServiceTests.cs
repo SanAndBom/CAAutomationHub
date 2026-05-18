@@ -58,6 +58,9 @@ public sealed class PilotPollingServiceTests
         Assert.Equal("Succeeded", snapshot.LastResultStatus);
         Assert.Equal("None", snapshot.LastErrorCode);
         Assert.Equal("PLC-01", snapshot.PlcCardStatus.TargetId);
+        Assert.Equal("Fake PLC Local", snapshot.PlcCardStatus.DisplayName);
+        Assert.Equal("Local Test", snapshot.PlcCardStatus.LineName);
+        Assert.Equal("localhost:2004", snapshot.PlcCardStatus.HostPort);
         Assert.Equal(PilotPlcConnectionStatus.Connected, snapshot.PlcCardStatus.ConnectionStatus);
         Assert.Equal("Succeeded", snapshot.PlcCardStatus.LastReadResultStatus);
     }
@@ -177,6 +180,7 @@ public sealed class PilotPollingServiceTests
         Assert.Equal("LOT-START-01", trendPoint.SelectedLotId);
         Assert.Equal("Succeeded", trendPoint.ResultStatus);
         Assert.Equal("None", trendPoint.ErrorCode);
+        Assert.Equal(1000, trendPoint.DurationMs);
     }
 
     [Fact]
@@ -214,7 +218,14 @@ public sealed class PilotPollingServiceTests
     private static PilotPollingService CreateService(IPilotPollingFlowPort port, int maxTrendPoints = 50)
         => new(
             port,
-            new PilotPollingOptions { TargetId = "PLC-01", MaxTrendPoints = maxTrendPoints },
+            new PilotPollingOptions
+            {
+                TargetId = "PLC-01",
+                DisplayName = "Fake PLC Local",
+                LineName = "Local Test",
+                HostPort = "localhost:2004",
+                MaxTrendPoints = maxTrendPoints
+            },
             new FixedClock());
 
     private static WorkStartExecutionResult CreateWorkStartResult(string selectedLotId)

@@ -25,7 +25,10 @@ public sealed class PilotPollingService : IPilotPollingService
         {
             PlcCardStatus = PilotPlcCardStatus.CreateInitial(
                 _options.TargetId,
-                _options.TargetLabel ?? _options.TargetId)
+                _options.TargetLabel ?? _options.TargetId,
+                _options.DisplayName,
+                _options.LineName,
+                _options.HostPort)
         };
     }
 
@@ -105,7 +108,8 @@ public sealed class PilotPollingService : IPilotPollingService
                     result.Message ?? "WorkStart processed.",
                     requestState,
                     selectedLotId: result.SelectedLotId ?? requestState.StartLotId,
-                    startAckState: result.Succeeded ? true : CurrentSnapshot.LastStartAckState));
+                    startAckState: result.Succeeded ? true : CurrentSnapshot.LastStartAckState,
+                    durationMs: (long)result.Duration.TotalMilliseconds));
             return CurrentSnapshot;
         }
 
@@ -210,7 +214,8 @@ public sealed class PilotPollingService : IPilotPollingService
         bool? isRunning = null,
         string? selectedLotId = null,
         bool? startAckState = null,
-        bool? completeAckState = null)
+        bool? completeAckState = null,
+        long durationMs = 0)
     {
         var now = _clock.GetUtcNow();
         return previous with
@@ -243,7 +248,7 @@ public sealed class PilotPollingService : IPilotPollingService
                 now,
                 status != PilotPollingStatus.Failed,
                 requestKind,
-                durationMs: 0,
+                durationMs,
                 selectedLotId ?? requestState?.StartLotId ?? previous.LastSelectedLotId,
                 resultStatus,
                 errorCode),

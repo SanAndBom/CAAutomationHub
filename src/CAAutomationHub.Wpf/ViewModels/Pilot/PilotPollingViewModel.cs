@@ -22,8 +22,16 @@ public sealed class PilotPollingViewModel : ViewModelBase
     private DateTimeOffset? _lastUpdatedAt;
     private string _plcCardTargetId = "-";
     private string _plcCardTargetLabel = "-";
+    private string _plcCardDisplayName = "-";
+    private string _plcCardLineName = "-";
+    private string _plcCardHostPort = "-";
     private string _plcCardConnectionStatus = PilotPlcConnectionStatus.Unknown.ToString();
     private string _plcCardLastReadResultStatus = "-";
+    private string _plcDetailDisplayName = "-";
+    private string _plcDetailHostPort = "-";
+    private string _plcDetailPollingStatus = "-";
+    private string _plcDetailLastResponse = "-";
+    private string _plcDetailLastMessage = "-";
     private string _scenarioObservation = "-";
     private IReadOnlyList<PilotPollingTrendPoint> _trendPoints = [];
     private IReadOnlyList<PilotPollingLogEntry> _logEntries = [];
@@ -143,6 +151,24 @@ public sealed class PilotPollingViewModel : ViewModelBase
         private set => SetProperty(ref _plcCardTargetLabel, value);
     }
 
+    public string PlcCardDisplayName
+    {
+        get => _plcCardDisplayName;
+        private set => SetProperty(ref _plcCardDisplayName, value);
+    }
+
+    public string PlcCardLineName
+    {
+        get => _plcCardLineName;
+        private set => SetProperty(ref _plcCardLineName, value);
+    }
+
+    public string PlcCardHostPort
+    {
+        get => _plcCardHostPort;
+        private set => SetProperty(ref _plcCardHostPort, value);
+    }
+
     public string PlcCardConnectionStatus
     {
         get => _plcCardConnectionStatus;
@@ -153,6 +179,36 @@ public sealed class PilotPollingViewModel : ViewModelBase
     {
         get => _plcCardLastReadResultStatus;
         private set => SetProperty(ref _plcCardLastReadResultStatus, value);
+    }
+
+    public string PlcDetailDisplayName
+    {
+        get => _plcDetailDisplayName;
+        private set => SetProperty(ref _plcDetailDisplayName, value);
+    }
+
+    public string PlcDetailHostPort
+    {
+        get => _plcDetailHostPort;
+        private set => SetProperty(ref _plcDetailHostPort, value);
+    }
+
+    public string PlcDetailPollingStatus
+    {
+        get => _plcDetailPollingStatus;
+        private set => SetProperty(ref _plcDetailPollingStatus, value);
+    }
+
+    public string PlcDetailLastResponse
+    {
+        get => _plcDetailLastResponse;
+        private set => SetProperty(ref _plcDetailLastResponse, value);
+    }
+
+    public string PlcDetailLastMessage
+    {
+        get => _plcDetailLastMessage;
+        private set => SetProperty(ref _plcDetailLastMessage, value);
     }
 
     public string ScenarioObservation
@@ -238,8 +294,18 @@ public sealed class PilotPollingViewModel : ViewModelBase
         LastUpdatedAt = snapshot.LastUpdatedAt;
         PlcCardTargetId = snapshot.PlcCardStatus.TargetId;
         PlcCardTargetLabel = snapshot.PlcCardStatus.TargetLabel;
+        PlcCardDisplayName = snapshot.PlcCardStatus.DisplayName;
+        PlcCardLineName = snapshot.PlcCardStatus.LineName;
+        PlcCardHostPort = snapshot.PlcCardStatus.HostPort;
         PlcCardConnectionStatus = snapshot.PlcCardStatus.ConnectionStatus.ToString();
         PlcCardLastReadResultStatus = snapshot.PlcCardStatus.LastReadResultStatus ?? "-";
+        PlcDetailDisplayName = snapshot.PlcCardStatus.DisplayName;
+        PlcDetailHostPort = snapshot.PlcCardStatus.HostPort;
+        PlcDetailPollingStatus = snapshot.PlcCardStatus.PollingStatus;
+        PlcDetailLastResponse = snapshot.PlcCardStatus.LastResultStatus
+            ?? snapshot.PlcCardStatus.LastReadResultStatus
+            ?? "-";
+        PlcDetailLastMessage = snapshot.LastMessage ?? "-";
         ScenarioObservation = CreateScenarioObservation(snapshot);
         TrendPoints = snapshot.TrendPoints;
         LogEntries = snapshot.LogEntries;

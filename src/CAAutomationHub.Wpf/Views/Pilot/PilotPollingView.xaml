@@ -58,30 +58,39 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <Border Grid.Column="0" Background="#142234" CornerRadius="4" Padding="10" Margin="0,0,8,0">
                     <StackPanel>
-                        <TextBlock Text="PLC" Foreground="{StaticResource TextMutedBrush}"/>
-                        <TextBlock Text="{Binding PlcCardTargetId}" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        <TextBlock Text="Pilot PLC" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding PlcCardDisplayName}" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        <TextBlock Text="{Binding PlcCardTargetId}" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
                     </StackPanel>
                 </Border>
 
                 <Border Grid.Column="1" Background="#142234" CornerRadius="4" Padding="10" Margin="0,0,8,0">
                     <StackPanel>
-                        <TextBlock Text="Target" Foreground="{StaticResource TextMutedBrush}"/>
-                        <TextBlock Text="{Binding PlcCardTargetLabel}" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        <TextBlock Text="Line" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding PlcCardLineName}" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
 
                 <Border Grid.Column="2" Background="#142234" CornerRadius="4" Padding="10" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="Target" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding PlcCardHostPort}" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="3" Background="#142234" CornerRadius="4" Padding="10" Margin="0,0,8,0">
                     <StackPanel>
                         <TextBlock Text="Connection" Foreground="{StaticResource TextMutedBrush}"/>
                         <TextBlock Text="{Binding PlcCardConnectionStatus}" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="3" Background="#142234" CornerRadius="4" Padding="10">
+                <Border Grid.Column="4" Background="#142234" CornerRadius="4" Padding="10">
                     <StackPanel>
                         <TextBlock Text="Last Read" Foreground="{StaticResource TextMutedBrush}"/>
                         <TextBlock Text="{Binding PlcCardLastReadResultStatus}" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
@@ -132,6 +141,9 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -140,23 +152,36 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Start Req" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastStartRequestActive}" Foreground="White" Margin="0,0,24,8"/>
-                <TextBlock Grid.Row="0" Grid.Column="2" Text="Complete Req" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
-                <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding LastCompleteRequestActive}" Foreground="White" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Detail PLC" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PlcDetailDisplayName}" Foreground="White" Margin="0,0,24,8"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="Detail Target" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding PlcDetailHostPort}" Foreground="White" Margin="0,0,0,8"/>
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Start ACK" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
-                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastStartAckState, TargetNullValue=-}" Foreground="White" Margin="0,0,24,8"/>
-                <TextBlock Grid.Row="1" Grid.Column="2" Text="Complete ACK" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
-                <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding LastCompleteAckState, TargetNullValue=-}" Foreground="White" Margin="0,0,0,8"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Polling" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PlcDetailPollingStatus}" Foreground="White" Margin="0,0,24,8"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="Last Response" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding PlcDetailLastResponse}" Foreground="White" Margin="0,0,0,8"/>
 
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Result" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,0"/>
-                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding LastResultStatus, TargetNullValue=-}" Foreground="White" Margin="0,0,24,0"/>
-                <TextBlock Grid.Row="2" Grid.Column="2" Text="Error" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,0"/>
-                <TextBlock Grid.Row="2" Grid.Column="3" Text="{Binding LastErrorCode, TargetNullValue=-}" Foreground="White"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Last Message" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding PlcDetailLastMessage}" Foreground="White" TextWrapping="Wrap" Margin="0,0,0,8"/>
 
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="Scenario" Foreground="{StaticResource TextMutedBrush}" Margin="0,8,14,0"/>
-                <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding ScenarioObservation}" Foreground="White" Margin="0,8,0,0"/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Start Req" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding LastStartRequestActive}" Foreground="White" Margin="0,0,24,8"/>
+                <TextBlock Grid.Row="3" Grid.Column="2" Text="Complete Req" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="3" Grid.Column="3" Text="{Binding LastCompleteRequestActive}" Foreground="White" Margin="0,0,0,8"/>
+
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Start ACK" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding LastStartAckState, TargetNullValue=-}" Foreground="White" Margin="0,0,24,8"/>
+                <TextBlock Grid.Row="4" Grid.Column="2" Text="Complete ACK" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="4" Grid.Column="3" Text="{Binding LastCompleteAckState, TargetNullValue=-}" Foreground="White" Margin="0,0,0,8"/>
+
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="Result" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,0"/>
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding LastResultStatus, TargetNullValue=-}" Foreground="White" Margin="0,0,24,0"/>
+                <TextBlock Grid.Row="5" Grid.Column="2" Text="Error" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,0"/>
+                <TextBlock Grid.Row="5" Grid.Column="3" Text="{Binding LastErrorCode, TargetNullValue=-}" Foreground="White"/>
+
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="Scenario" Foreground="{StaticResource TextMutedBrush}" Margin="0,8,14,0"/>
+                <TextBlock Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding ScenarioObservation}" Foreground="White" Margin="0,8,0,0"/>
             </Grid>
 
             <ItemsControl Grid.Row="4" ItemsSource="{Binding TrendPoints}" Margin="0,0,0,12">

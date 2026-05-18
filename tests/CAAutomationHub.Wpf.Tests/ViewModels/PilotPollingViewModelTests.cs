@@ -31,9 +31,16 @@ public sealed class PilotPollingViewModelTests
         Assert.Equal("WorkStart processed.", viewModel.LastMessage);
         Assert.Single(viewModel.LogEntries);
         Assert.Equal("fakeplc-local", viewModel.PlcCardTargetId);
-        Assert.Equal("localhost:2004", viewModel.PlcCardTargetLabel);
+        Assert.Equal("Fake PLC Local", viewModel.PlcCardDisplayName);
+        Assert.Equal("Local Test", viewModel.PlcCardLineName);
+        Assert.Equal("localhost:2004", viewModel.PlcCardHostPort);
         Assert.Equal("Connected", viewModel.PlcCardConnectionStatus);
         Assert.Equal("Succeeded", viewModel.PlcCardLastReadResultStatus);
+        Assert.Equal("Fake PLC Local", viewModel.PlcDetailDisplayName);
+        Assert.Equal("localhost:2004", viewModel.PlcDetailHostPort);
+        Assert.Equal("WorkStartProcessed", viewModel.PlcDetailPollingStatus);
+        Assert.Equal("Succeeded", viewModel.PlcDetailLastResponse);
+        Assert.Equal("WorkStart processed.", viewModel.PlcDetailLastMessage);
         var trendPoint = Assert.Single(viewModel.TrendPoints);
         Assert.Equal(1, trendPoint.SequenceNo);
         Assert.Equal("Succeeded", trendPoint.ResultStatus);
@@ -146,6 +153,12 @@ public sealed class PilotPollingViewModelTests
             PilotPollingSnapshot.Initial with
             {
                 PlcCardStatus = PilotPlcCardStatus.CreateInitial("fakeplc-local", "localhost:2004")
+                    with
+                    {
+                        DisplayName = "Fake PLC Local",
+                        LineName = "Local Test",
+                        HostPort = "localhost:2004"
+                    }
             };
 
         public ValueTask StartAsync(CancellationToken cancellationToken = default)
