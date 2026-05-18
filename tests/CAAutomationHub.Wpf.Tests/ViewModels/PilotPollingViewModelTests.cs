@@ -34,6 +34,9 @@ public sealed class PilotPollingViewModelTests
         Assert.Equal("localhost:2004", viewModel.PlcCardTargetLabel);
         Assert.Equal("Connected", viewModel.PlcCardConnectionStatus);
         Assert.Equal("Succeeded", viewModel.PlcCardLastReadResultStatus);
+        var trendPoint = Assert.Single(viewModel.TrendPoints);
+        Assert.Equal(1, trendPoint.SequenceNo);
+        Assert.Equal("Succeeded", trendPoint.ResultStatus);
     }
 
     [Fact]
@@ -169,6 +172,18 @@ public sealed class PilotPollingViewModelTests
                     LastErrorCode = "None",
                     LastUpdatedAt = DateTimeOffset.Parse("2026-05-18T10:00:00+09:00")
                 },
+                TrendPoints =
+                [
+                    new PilotPollingTrendPoint(
+                        1,
+                        DateTimeOffset.Parse("2026-05-18T10:00:00+09:00"),
+                        true,
+                        WorkRequestKind.WorkStart,
+                        DurationMs: 10,
+                        "LOT-START-01",
+                        "Succeeded",
+                        "None")
+                ],
                 LogEntries =
                 [
                     new PilotPollingLogEntry(

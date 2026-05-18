@@ -238,6 +238,15 @@ public sealed class PilotPollingService : IPilotPollingService
                 resultStatus,
                 errorCode,
                 now),
+            TrendPoints = AppendTrendPoint(
+                previous.TrendPoints,
+                now,
+                status != PilotPollingStatus.Failed,
+                requestKind,
+                durationMs: 0,
+                selectedLotId ?? requestState?.StartLotId ?? previous.LastSelectedLotId,
+                resultStatus,
+                errorCode),
             LogEntries = AppendLog(previous.LogEntries, now, requestKind, status, message)
         };
     }
@@ -316,6 +325,37 @@ public sealed class PilotPollingService : IPilotPollingService
         return entries.Length <= _options.MaxLogEntries
             ? entries
             : entries[^_options.MaxLogEntries..];
+    }
+
+    private IReadOnlyList<PilotPollingTrendPoint> AppendTrendPoint(
+        IReadOnlyList<PilotPollingTrendPoint> previous,
+        DateTimeOffset now,
+        bool isSuccess,
+        WorkRequestKind requestKind,
+        long durationMs,
+        string? selectedLotId,
+        string? resultStatus,
+        string? errorCode)
+    {
+        var nextSequence = previous.Count == 0
+            ? 1
+            : previous[^1].SequenceNo + 1;
+        var entries = previous
+            .Append(new PilotPollingTrendPoint(
+                nextSequence,
+                now,
+                isSuccess,
+                requestKind,
+                durationMs,
+                selectedLotId,
+                resultStatus,
+                errorCode))
+            .ToArray();
+        var maxCount = Math.Max(1, _options.MaxTrendPoints);
+
+        return entries.Length <= maxCount
+            ? entries
+            : entries[^maxCount..];
     }
 
     private void Publish(PilotPollingSnapshot snapshot)

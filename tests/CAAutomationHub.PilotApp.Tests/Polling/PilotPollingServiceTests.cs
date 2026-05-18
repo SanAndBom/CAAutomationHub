@@ -155,6 +155,45 @@ public sealed class PilotPollingServiceTests
     }
 
     [Fact]
+    public async Task PollOnceAsync_AppendsTrendPoint()
+    {
+        var port = new FakePilotPollingFlowPort
+        {
+            RequestState = new PilotPollingRequestState
+            {
+                StartRequestActive = true,
+                StartLotId = "LOT-START-01"
+            },
+            WorkStartResult = CreateWorkStartResult(selectedLotId: "LOT-START-01")
+        };
+        var service = CreateService(port);
+
+        var snapshot = await service.PollOnceAsync();
+
+        var trendPoint = Assert.Single(snapshot.TrendPoints);
+        Assert.Equal(1, trendPoint.SequenceNo);
+        Assert.True(trendPoint.IsSuccess);
+        Assert.Equal(WorkRequestKind.WorkStart, trendPoint.RequestKind);
+        Assert.Equal("LOT-START-01", trendPoint.SelectedLotId);
+        Assert.Equal("Succeeded", trendPoint.ResultStatus);
+        Assert.Equal("None", trendPoint.ErrorCode);
+    }
+
+    [Fact]
+    public async Task PollOnceAsync_TrimsTrendPointsToMaxCount()
+    {
+        var port = new FakePilotPollingFlowPort();
+        var service = CreateService(port, maxTrendPoints: 2);
+
+        await service.PollOnceAsync();
+        await service.PollOnceAsync();
+        var snapshot = await service.PollOnceAsync();
+
+        Assert.Equal(2, snapshot.TrendPoints.Count);
+        Assert.Equal([2, 3], snapshot.TrendPoints.Select(static point => point.SequenceNo).ToArray());
+    }
+
+    [Fact]
     public void PollingSnapshot_DoesNotExposeRuntimeOrChannelPollingDetails()
     {
         var propertyNames = typeof(PilotPollingSnapshot)
@@ -172,10 +211,10 @@ public sealed class PilotPollingServiceTests
         Assert.DoesNotContain(typeNames, static name => name.Contains(string.Join("", "Channel", "Polling", "Result"), StringComparison.OrdinalIgnoreCase));
     }
 
-    private static PilotPollingService CreateService(IPilotPollingFlowPort port)
+    private static PilotPollingService CreateService(IPilotPollingFlowPort port, int maxTrendPoints = 50)
         => new(
             port,
-            new PilotPollingOptions { TargetId = "PLC-01" },
+            new PilotPollingOptions { TargetId = "PLC-01", MaxTrendPoints = maxTrendPoints },
             new FixedClock());
 
     private static WorkStartExecutionResult CreateWorkStartResult(string selectedLotId)

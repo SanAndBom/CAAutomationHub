@@ -9,6 +9,7 @@ public sealed record PilotPollingSnapshot
         LastRequestKind = WorkRequestKind.None,
         PlcCardStatus = PilotPlcCardStatus.Unknown,
         LastUpdatedAt = null,
+        TrendPoints = [],
         LogEntries = []
     };
 
@@ -37,6 +38,8 @@ public sealed record PilotPollingSnapshot
     public string? LastMessage { get; init; }
 
     public DateTimeOffset? LastUpdatedAt { get; init; }
+
+    public required IReadOnlyList<PilotPollingTrendPoint> TrendPoints { get; init; }
 
     public required IReadOnlyList<PilotPollingLogEntry> LogEntries { get; init; }
 }

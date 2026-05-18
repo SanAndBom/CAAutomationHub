@@ -9,6 +9,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0" Margin="0,0,0,12">
@@ -154,7 +155,34 @@
                 <TextBlock Grid.Row="2" Grid.Column="3" Text="{Binding LastErrorCode, TargetNullValue=-}" Foreground="White"/>
             </Grid>
 
-            <ItemsControl Grid.Row="4" ItemsSource="{Binding LogEntries}">
+            <ItemsControl Grid.Row="4" ItemsSource="{Binding TrendPoints}" Margin="0,0,0,12">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="#101B2B" CornerRadius="4" Padding="8" Margin="0,0,0,4">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="48"/>
+                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="88"/>
+                                    <ColumnDefinition Width="88"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding SequenceNo}" Foreground="White"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Timestamp, StringFormat={}{0:HH:mm:ss}}" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Grid.Column="2" Text="{Binding IsSuccess}" Foreground="White"/>
+                                <TextBlock Grid.Column="3" Text="{Binding RequestKind}" Foreground="White"/>
+                                <TextBlock Grid.Column="4" Text="{Binding SelectedLotId, TargetNullValue=-}" Foreground="White"/>
+                                <TextBlock Grid.Column="5" Text="{Binding DurationMs}" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBlock Grid.Column="6" Text="{Binding ErrorCode, TargetNullValue=-}" Foreground="{StaticResource TextMutedBrush}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <ItemsControl Grid.Row="5" ItemsSource="{Binding LogEntries}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,4">

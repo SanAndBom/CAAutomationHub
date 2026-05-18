@@ -50,6 +50,27 @@ public sealed class PilotPollingViewBindingTests
     }
 
     [Fact]
+    public void PollingTrend_BindsToTrendPoints()
+    {
+        var document = XDocument.Load(FindRepositoryFile(
+            "src",
+            "CAAutomationHub.Wpf",
+            "Views",
+            "Pilot",
+            "PilotPollingView.xaml"));
+
+        XNamespace wpf = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
+        var itemsSources = document
+            .Descendants(wpf + "ItemsControl")
+            .Select(element => (string?)element.Attribute("ItemsSource"))
+            .Where(value => value is not null)
+            .Cast<string>()
+            .ToArray();
+
+        Assert.Contains("{Binding TrendPoints}", itemsSources);
+    }
+
+    [Fact]
     public void MainWindow_ContainsPilotPollingViewBoundToPilotPollingViewModel()
     {
         var document = XDocument.Load(FindRepositoryFile(

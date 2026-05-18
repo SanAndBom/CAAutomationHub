@@ -24,6 +24,7 @@ public sealed class PilotPollingViewModel : ViewModelBase
     private string _plcCardTargetLabel = "-";
     private string _plcCardConnectionStatus = PilotPlcConnectionStatus.Unknown.ToString();
     private string _plcCardLastReadResultStatus = "-";
+    private IReadOnlyList<PilotPollingTrendPoint> _trendPoints = [];
     private IReadOnlyList<PilotPollingLogEntry> _logEntries = [];
 
     public PilotPollingViewModel(IPilotPollingService pollingService)
@@ -153,6 +154,12 @@ public sealed class PilotPollingViewModel : ViewModelBase
         private set => SetProperty(ref _plcCardLastReadResultStatus, value);
     }
 
+    public IReadOnlyList<PilotPollingTrendPoint> TrendPoints
+    {
+        get => _trendPoints;
+        private set => SetProperty(ref _trendPoints, value);
+    }
+
     public IReadOnlyList<PilotPollingLogEntry> LogEntries
     {
         get => _logEntries;
@@ -226,6 +233,7 @@ public sealed class PilotPollingViewModel : ViewModelBase
         PlcCardTargetLabel = snapshot.PlcCardStatus.TargetLabel;
         PlcCardConnectionStatus = snapshot.PlcCardStatus.ConnectionStatus.ToString();
         PlcCardLastReadResultStatus = snapshot.PlcCardStatus.LastReadResultStatus ?? "-";
+        TrendPoints = snapshot.TrendPoints;
         LogEntries = snapshot.LogEntries;
     }
 
