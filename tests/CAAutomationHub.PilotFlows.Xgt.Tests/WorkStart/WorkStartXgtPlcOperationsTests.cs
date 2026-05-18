@@ -16,6 +16,60 @@ public sealed class WorkStartXgtPlcOperationsTests
         Assert.Equal(90, options.ReadWordCount);
     }
 
+    [Fact]
+    public void WorkStartXgtWriteOptions_Default_UsesPilotBaseline()
+    {
+        var options = WorkStartXgtWriteOptions.Default;
+
+        Assert.Equal("%DB11000", options.ProcessPayloadWriteVariable);
+        Assert.Equal("%DB11416", options.StartAckWriteVariable);
+        Assert.Equal((ushort)1, options.StartAckValue);
+        Assert.Equal("%DB11410", options.ErrorCodeWriteVariable);
+    }
+
+    [Theory]
+    [InlineData("", "%DB11416", "%DB11410")]
+    [InlineData(" ", "%DB11416", "%DB11410")]
+    [InlineData("%DB11000", "", "%DB11410")]
+    [InlineData("%DB11000", " ", "%DB11410")]
+    [InlineData("%DB11000", "%DB11416", "")]
+    [InlineData("%DB11000", "%DB11416", " ")]
+    public void WorkStartXgtWriteOptions_RejectsEmptyVariables(
+        string processPayloadWriteVariable,
+        string startAckWriteVariable,
+        string errorCodeWriteVariable)
+    {
+        Assert.Throws<ArgumentException>(
+            () => new WorkStartXgtWriteOptions(
+                processPayloadWriteVariable,
+                startAckWriteVariable,
+                startAckValue: 1,
+                errorCodeWriteVariable));
+    }
+
+    [Fact]
+    public void WorkStartXgtWriteOptions_RejectsNullVariables()
+    {
+        Assert.Throws<ArgumentException>(
+            () => new WorkStartXgtWriteOptions(
+                null!,
+                "%DB11416",
+                startAckValue: 1,
+                "%DB11410"));
+        Assert.Throws<ArgumentException>(
+            () => new WorkStartXgtWriteOptions(
+                "%DB11000",
+                null!,
+                startAckValue: 1,
+                "%DB11410"));
+        Assert.Throws<ArgumentException>(
+            () => new WorkStartXgtWriteOptions(
+                "%DB11000",
+                "%DB11416",
+                startAckValue: 1,
+                null!));
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
@@ -166,16 +220,120 @@ public sealed class WorkStartXgtPlcOperationsTests
     }
 
     [Fact]
-    public async Task WriteMethods_AreExplicitlyUnsupportedInReadSkeleton()
+    public async Task WriteProcessPayloadAsync_UsesProcessPayloadWriteVariable()
+    {
+        var payload = new byte[] { 0x10, 0x20, 0x30 };
+        var session = new FakeXgtSession { IsConnectedValue = true };
+        var writeOptions = new WorkStartXgtWriteOptions(
+            "%DB12000",
+            "%DB11416",
+            startAckValue: 1,
+            "%DB11410");
+        var operations = CreateOperations(session, writeOptions);
+
+        var result = await operations.WriteProcessPayloadAsync(payload);
+
+        Assert.True(result);
+        var request = Assert.IsType<XgtWriteRequest>(session.LastWriteRequest);
+        Assert.Equal(XgtDataType.Continuous, request.DataType);
+        var block = Assert.Single(request.VariableBlocks);
+        Assert.Equal("%DB12000", block.VariableName);
+        Assert.Equal(new byte[] { 0x10, 0x20, 0x30 }, block.Data);
+    }
+
+    [Fact]
+    public async Task WriteProcessPayloadAsync_RejectsNullPayload()
     {
         var operations = CreateOperations(new FakeXgtSession { IsConnectedValue = true });
 
-        await Assert.ThrowsAsync<NotSupportedException>(
-            async () => await operations.WriteProcessPayloadAsync(new byte[] { 1 }));
-        await Assert.ThrowsAsync<NotSupportedException>(
-            async () => await operations.WriteStartAckAsync());
-        await Assert.ThrowsAsync<NotSupportedException>(
-            async () => await operations.WriteErrorCodeBestEffortAsync(WorkStartErrorCode.ReadFailed));
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            async () => await operations.WriteProcessPayloadAsync(null!));
+    }
+
+    [Fact]
+    public async Task WriteStartAckAsync_WritesAckValueAsUShortLittleEndian()
+    {
+        var session = new FakeXgtSession { IsConnectedValue = true };
+        var writeOptions = new WorkStartXgtWriteOptions(
+            "%DB11000",
+            "%DB12016",
+            startAckValue: 0x1234,
+            "%DB11410");
+        var operations = CreateOperations(session, writeOptions);
+
+        var result = await operations.WriteStartAckAsync();
+
+        Assert.True(result);
+        var request = Assert.IsType<XgtWriteRequest>(session.LastWriteRequest);
+        Assert.Equal(XgtDataType.Continuous, request.DataType);
+        var block = Assert.Single(request.VariableBlocks);
+        Assert.Equal("%DB12016", block.VariableName);
+        Assert.Equal(new byte[] { 0x34, 0x12 }, block.Data);
+    }
+
+    [Fact]
+    public async Task WriteErrorCodeBestEffortAsync_WritesErrorCodeAsUShortLittleEndian()
+    {
+        var session = new FakeXgtSession { IsConnectedValue = true };
+        var writeOptions = new WorkStartXgtWriteOptions(
+            "%DB11000",
+            "%DB11416",
+            startAckValue: 1,
+            "%DB12010");
+        var operations = CreateOperations(session, writeOptions);
+
+        await operations.WriteErrorCodeBestEffortAsync(WorkStartErrorCode.BulkWriteFailed);
+
+        var request = Assert.IsType<XgtWriteRequest>(session.LastWriteRequest);
+        Assert.Equal(XgtDataType.Continuous, request.DataType);
+        var block = Assert.Single(request.VariableBlocks);
+        Assert.Equal("%DB12010", block.VariableName);
+        Assert.Equal(new byte[] { 0xC5, 0x09 }, block.Data);
+    }
+
+    [Fact]
+    public async Task WriteProcessPayloadAsync_ReturnsFalse_WhenSessionWriteFails()
+    {
+        var session = new FakeXgtSession
+        {
+            IsConnectedValue = true,
+            WriteResponse = new XgtWriteResponse(
+                XgtDataType.Continuous,
+                XgtErrorStatus.Nak(0x0001, 0x1234))
+        };
+        var operations = CreateOperations(session);
+
+        var result = await operations.WriteProcessPayloadAsync(new byte[] { 1 });
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task WriteStartAckAsync_ReturnsFalse_WhenSessionWriteFails()
+    {
+        var session = new FakeXgtSession
+        {
+            IsConnectedValue = true,
+            WriteException = new InvalidOperationException("forced write failure")
+        };
+        var operations = CreateOperations(session);
+
+        var result = await operations.WriteStartAckAsync();
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task WriteErrorCodeBestEffortAsync_DoesNotThrow_WhenSessionWriteFails()
+    {
+        var session = new FakeXgtSession
+        {
+            IsConnectedValue = true,
+            WriteException = new InvalidOperationException("forced write failure")
+        };
+        var operations = CreateOperations(session);
+
+        await operations.WriteErrorCodeBestEffortAsync(WorkStartErrorCode.AckWriteFailed);
     }
 
     private static readonly XgtReadRequest DefaultReadRequest = new(
@@ -185,6 +343,11 @@ public sealed class WorkStartXgtPlcOperationsTests
 
     private static WorkStartXgtPlcOperations CreateOperations(FakeXgtSession session) =>
         new(session, DefaultReadRequest);
+
+    private static WorkStartXgtPlcOperations CreateOperations(
+        FakeXgtSession session,
+        WorkStartXgtWriteOptions writeOptions) =>
+        new(session, DefaultReadRequest, writeOptions);
 
     private static XgtReadResponse AckWithData(params byte[] data) =>
         new(
@@ -200,9 +363,15 @@ public sealed class WorkStartXgtPlcOperationsTests
 
         public Exception? ReadException { get; init; }
 
+        public XgtWriteResponse? WriteResponse { get; init; }
+
+        public Exception? WriteException { get; init; }
+
         public int ConnectCallCount { get; private set; }
 
         public XgtReadRequest? LastReadRequest { get; private set; }
+
+        public XgtWriteRequest? LastWriteRequest { get; private set; }
 
         public bool IsConnected => IsConnectedValue || ConnectCallCount > 0;
 
@@ -226,8 +395,18 @@ public sealed class WorkStartXgtPlcOperationsTests
             return Task.FromResult(ReadResponse ?? AckWithData());
         }
 
-        public Task<XgtWriteResponse> WriteAsync(XgtWriteRequest request, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
+        public Task<XgtWriteResponse> WriteAsync(XgtWriteRequest request, CancellationToken cancellationToken)
+        {
+            LastWriteRequest = request;
+
+            if (WriteException is not null)
+            {
+                throw WriteException;
+            }
+
+            return Task.FromResult(
+                WriteResponse ?? new XgtWriteResponse(XgtDataType.Continuous, XgtErrorStatus.Ack()));
+        }
 
         public Task<XgtStatusResponse> ReadStatusAsync(CancellationToken cancellationToken) =>
             throw new NotSupportedException();
