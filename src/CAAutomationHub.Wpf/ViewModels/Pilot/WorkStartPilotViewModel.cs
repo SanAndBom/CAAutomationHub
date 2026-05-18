@@ -1,3 +1,4 @@
+using System.Windows.Input;
 using CAAutomationHub.PilotApp.WorkStart;
 
 namespace CAAutomationHub.Wpf.ViewModels.Pilot;
@@ -28,14 +29,26 @@ public sealed class WorkStartPilotViewModel : ViewModelBase
         }
 
         _targetId = targetId;
+        ExecuteOnceCommand = new RelayCommand(
+            _ => _ = ExecuteOnceAsync().AsTask(),
+            _ => !IsBusy);
     }
 
     public string TargetId => _targetId;
 
+    public ICommand ExecuteOnceCommand { get; }
+
     public bool IsBusy
     {
         get => _isBusy;
-        private set => SetProperty(ref _isBusy, value);
+        private set
+        {
+            if (SetProperty(ref _isBusy, value)
+                && ExecuteOnceCommand is RelayCommand executeOnceCommand)
+            {
+                executeOnceCommand.RaiseCanExecuteChanged();
+            }
+        }
     }
 
     public bool? LastSucceeded

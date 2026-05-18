@@ -106,6 +106,54 @@ public sealed class WorkStartPilotViewModelTests
     }
 
     [Fact]
+    public async Task ExecuteOnceCommand_InvokesExecutionService()
+    {
+        var service = new FakeWorkStartExecutionService(CreateSuccessResult());
+        var viewModel = new WorkStartPilotViewModel(service, "PLC-01");
+
+        viewModel.ExecuteOnceCommand.Execute(null);
+        await Task.Yield();
+
+        Assert.Equal(1, service.CallCount);
+        Assert.NotNull(service.LastRequest);
+        Assert.Equal("PLC-01", service.LastRequest.TargetId);
+        Assert.True(viewModel.LastSucceeded);
+        Assert.Equal("completed", viewModel.LastStep);
+    }
+
+    [Fact]
+    public async Task ExecuteOnceCommand_RespectsBusyState()
+    {
+        var service = new BlockingWorkStartExecutionService(CreateSuccessResult());
+        var viewModel = new WorkStartPilotViewModel(service, "PLC-01");
+
+        viewModel.ExecuteOnceCommand.Execute(null);
+        await service.ExecutionStarted.Task;
+        viewModel.ExecuteOnceCommand.Execute(null);
+
+        Assert.True(viewModel.IsBusy);
+        Assert.Equal(1, service.CallCount);
+        service.Release();
+        await Task.Yield();
+    }
+
+    [Fact]
+    public async Task ExecuteOnceCommand_CanExecuteReflectsBusyState()
+    {
+        var service = new BlockingWorkStartExecutionService(CreateSuccessResult());
+        var viewModel = new WorkStartPilotViewModel(service, "PLC-01");
+
+        Assert.True(viewModel.ExecuteOnceCommand.CanExecute(null));
+        viewModel.ExecuteOnceCommand.Execute(null);
+        await service.ExecutionStarted.Task;
+
+        Assert.False(viewModel.ExecuteOnceCommand.CanExecute(null));
+        service.Release();
+        await WaitUntilAsync(() => !viewModel.IsBusy);
+        Assert.True(viewModel.ExecuteOnceCommand.CanExecute(null));
+    }
+
+    [Fact]
     public void ViewModel_DoesNotReferenceForbiddenRuntimeOrDriverTypes()
     {
         var referencedAssemblyNames = typeof(WorkStartPilotViewModel)
@@ -172,10 +220,13 @@ public sealed class WorkStartPilotViewModelTests
 
         public WorkStartExecutionRequest? LastRequest { get; private set; }
 
+        public int CallCount { get; private set; }
+
         public ValueTask<WorkStartExecutionResult> ExecuteOnceAsync(
             WorkStartExecutionRequest request,
             CancellationToken cancellationToken = default)
         {
+            CallCount++;
             LastRequest = request;
             return ValueTask.FromResult(_result);
         }
@@ -206,5 +257,14 @@ public sealed class WorkStartPilotViewModelTests
         }
 
         public void Release() => _release.SetResult();
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        while (!condition())
+        {
+            await Task.Delay(10, cts.Token);
+        }
     }
 }
