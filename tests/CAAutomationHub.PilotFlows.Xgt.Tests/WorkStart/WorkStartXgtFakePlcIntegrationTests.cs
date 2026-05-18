@@ -48,6 +48,59 @@ public sealed class WorkStartXgtFakePlcIntegrationTests
         Assert.Equal(WorkStartLotIdSelectionSource.LotId1, selectedLotId.Source);
     }
 
+    [Fact]
+    public async Task WriteProcessPayloadAsync_WithFakePlc_WritesPayloadToBulkTarget()
+    {
+        var runtime = CreateRuntime();
+        var payload = Enumerable.Range(0, 140)
+            .Select(value => (byte)(value + 1))
+            .ToArray();
+        await using var fakePlc = InProcessFakePlcServer.Start(runtime);
+        await using var session = CreateSession(fakePlc.Port);
+        var operations = new WorkStartXgtPlcOperations(session);
+
+        await operations.EnsureConnectedAsync();
+
+        var result = await operations.WriteProcessPayloadAsync(payload);
+
+        Assert.True(result);
+        Assert.Equal(payload, runtime.LastBulkWrite);
+        Assert.Equal(payload, runtime.ReadContinuous(FakePlcMemoryImage.Db11000, payload.Length));
+    }
+
+    [Fact]
+    public async Task WriteStartAckAsync_WithFakePlc_WritesAckValueToAckTarget()
+    {
+        var runtime = CreateRuntime();
+        await using var fakePlc = InProcessFakePlcServer.Start(runtime);
+        await using var session = CreateSession(fakePlc.Port);
+        var operations = new WorkStartXgtPlcOperations(session);
+
+        await operations.EnsureConnectedAsync();
+
+        var result = await operations.WriteStartAckAsync();
+
+        Assert.True(result);
+        Assert.Equal((ushort)1, runtime.LastAckValue);
+        Assert.Equal(new byte[] { 0x01, 0x00 }, runtime.ReadContinuous(FakePlcMemoryImage.Db11416, 2));
+    }
+
+    [Fact]
+    public async Task WriteErrorCodeBestEffortAsync_WithFakePlc_WritesErrorCodeToErrorTarget()
+    {
+        var runtime = CreateRuntime();
+        await using var fakePlc = InProcessFakePlcServer.Start(runtime);
+        await using var session = CreateSession(fakePlc.Port);
+        var operations = new WorkStartXgtPlcOperations(session);
+
+        await operations.EnsureConnectedAsync();
+
+        await operations.WriteErrorCodeBestEffortAsync(WorkStartErrorCode.DbNotFound);
+
+        Assert.Equal((ushort)WorkStartErrorCode.DbNotFound, runtime.LastErrorCode);
+        Assert.Equal(new byte[] { 0xFD, 0x08 }, runtime.ReadContinuous(FakePlcMemoryImage.Db11410, 2));
+    }
+
     private static XgtSession CreateSession(int port)
     {
         var transport = new TcpTransport(new XgtTransportOptions
