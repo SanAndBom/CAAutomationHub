@@ -232,6 +232,33 @@ public sealed class WorkStartXgtFakePlcIntegrationTests
     }
 
     [Fact]
+    public async Task AckOffAsync_WithFakePlc_WritesZeroToStartAckTarget_WhenStartRequestIsOff()
+    {
+        var runtime = CreateRuntime(startSignal: false);
+        runtime.WriteContinuous(FakePlcMemoryImage.Db11416, new byte[] { 0x01, 0x00 });
+        await using var fakePlc = InProcessFakePlcServer.Start(runtime);
+        await using var session = CreateSession(fakePlc.Port);
+        var operations = new WorkStartXgtPlcOperations(
+            session,
+            WorkStartXgtReadOptions.Default,
+            new WorkStartXgtWriteOptions(
+                WorkStartXgtWriteOptions.DefaultProcessPayloadWriteVariable,
+                WorkStartXgtWriteOptions.DefaultStartAckWriteVariable,
+                startAckValue: 0,
+                WorkStartXgtWriteOptions.DefaultErrorCodeWriteVariable));
+        var service = new WorkStartAckOffService(
+            operations,
+            new WorkStartAckOffOptions { StartSignalWordIndex = FakePlcStartSignalWordIndex });
+
+        var result = await service.AckOffAsync();
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(WorkStartAckOffStatus.AckOffWritten, result.Status);
+        Assert.Equal((ushort)0, runtime.LastAckValue);
+        Assert.Equal(new byte[] { 0x00, 0x00 }, runtime.ReadContinuous(FakePlcMemoryImage.Db11416, 2));
+    }
+
+    [Fact]
     public async Task WriteErrorCodeBestEffortAsync_WithFakePlc_WritesErrorCodeToErrorTarget()
     {
         var runtime = CreateRuntime();
