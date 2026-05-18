@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CAAutomationHub.Contracts\CAAutomationHub.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\CAAutomationHub.PilotApp\CAAutomationHub.PilotApp.csproj" />
     <ProjectReference Include="..\..\src\CAAutomationHub.Wpf\CAAutomationHub.Wpf.csproj" />
   </ItemGroup>
 
