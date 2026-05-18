@@ -221,7 +221,7 @@ PASS: warning 0, error 0
 명령:
 
 ```text
-rg -n "Password=|Pwd=|User ID=|Data Source=|Initial Catalog=|Server=|TrustServerCertificate|Encrypt=|ca_erp|PlcFaDatabase" src tests docs config tools -g "!**/bin/**" -g "!**/obj/**"
+rg -n "Password=|Pwd=|User ID=|User Id=|Data Source=|Initial Catalog=|Server=|TrustServerCertificate|Encrypt=" src tests docs config tools -g "!**/bin/**" -g "!**/obj/**"
 ```
 
 결과:

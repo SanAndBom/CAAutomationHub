@@ -1,14 +1,20 @@
-# AH-PILOT-DB-LIVE-02 Closeout - SqlServer env smoke and WPF observation gate
+# AH-PILOT-DB-LIVE-02 Closeout - SqlServer env smoke and WPF observation
 
 ## 1. Summary
 
-AH-PILOT-DB-LIVE-02는 `AH-PILOT-DB-LIVE` commit `41179d4` 이후 실제 SQL Server DB와 FakePlcLocal WPF PilotPollingView를 함께 관찰하기 위한 실행 시도다.
+AH-PILOT-DB-LIVE-02는 `AH-PILOT-DB-LIVE` commit `41179d4` 이후 실제 SQL Server DB와 FakePlcLocal WPF PilotPollingView를 함께 관찰한 실행 검증이다.
 
-이번 세션에서는 secret policy와 local-only config guard를 먼저 확인했고, `config/pilot.local.json`은 ignored local file로 `FakePlcLocal + SqlServer` profile 형태에 맞췄다.
+이번 세션에서는 SQL Server connection string과 test LOT ID를 PowerShell process env var로만 주입했다. `config/pilot.local.json`은 ignored local file로 유지했고, 실제 connection string 값은 code/config/sample/closeout/commit에 남기지 않았다.
 
-단, Codex가 실행하는 PowerShell 환경에 `CAAH_WORKSTART_DB_CONNECTION_STRING`과 `CAAH_WORKSTART_TEST_LOT_ID`가 모두 없었기 때문에 실제 SQL Server smoke는 skip되었고, WPF FakePlcLocal + SqlServer live observation은 진행하지 않았다. 실제 DB connection string, DB host, DB user, password는 파일, 문서, commit, 출력에 남기지 않았다.
+검증 결과:
 
-판정은 `PARTIAL`이다. 구현 결함이 아니라 live observation precondition인 env var 부재로 실제 DB query와 WPF 화면 관찰을 완료하지 못했다.
+- SqlServer WorkStartDataQuery smoke test가 skip 없이 실행되었다.
+- FakePlc는 `localhost:2004` 경로에서 reachable 상태가 되었다.
+- WPF는 `FakePlcLocal + SqlServer` profile을 load했다.
+- WPF PilotPollingView에서 `Poll Once` 실행 후 실제 DB 조회 기반 WorkStart 흐름이 `Succeeded`로 관찰되었다.
+- write는 실제 PLC가 아니라 FakePlc 대상으로만 수행되었다.
+
+판정은 `ACCEPT`다.
 
 ## 2. Env Var / Secret Handling
 
@@ -17,14 +23,14 @@ AH-PILOT-DB-LIVE-02는 `AH-PILOT-DB-LIVE` commit `41179d4` 이후 실제 SQL Ser
 - `CAAH_WORKSTART_DB_CONNECTION_STRING`
 - `CAAH_WORKSTART_TEST_LOT_ID`
 
-현재 세션 확인:
+확인:
 
 ```text
-CAAH_WORKSTART_DB_CONNECTION_STRING present: False
-CAAH_WORKSTART_TEST_LOT_ID present: False
+CAAH_WORKSTART_DB_CONNECTION_STRING present: True
+CAAH_WORKSTART_TEST_LOT_ID present: True
 ```
 
-값은 모두 `[REDACTED]`로 취급한다.
+값은 모두 `[REDACTED]`로 취급했다.
 
 ## 3. DB Smoke 결과
 
@@ -37,14 +43,15 @@ dotnet test tests\CAAutomationHub.PilotFlows.SqlServer.Tests\CAAutomationHub.Pil
 결과:
 
 ```text
-PASS: failed 0, passed 4, skipped 1, total 5
+PASS: failed 0, passed 5, skipped 0, total 5
 ```
 
 관찰:
 
-- `SqlServerWorkStartDataQuerySmokeTests.QueryAsync_WithEnvironmentConfiguration_ReturnsTerminalStatus`는 skip되었다.
-- skip 사유는 `CAAH_WORKSTART_DB_CONNECTION_STRING` 또는 `CAAH_WORKSTART_TEST_LOT_ID` env var 부재다.
-- 실제 DB query result status, mapped fields sanity, SQL exception path는 이번 세션에서 관찰하지 못했다.
+- `SqlServerWorkStartDataQuerySmokeTests.QueryAsync_WithEnvironmentConfiguration_ReturnsTerminalStatus`가 skip 없이 실행되었다.
+- WPF PilotPolling observation 결과 기준 DB query는 `Succeeded` 흐름으로 이어졌다.
+- mapped LOT ID는 test LOT ID와 일치했다.
+- 오류 메시지에 connection string 또는 DB secret이 노출되지 않았다.
 
 ## 4. Local Config 상태
 
@@ -57,7 +64,7 @@ git check-ignore config/pilot.local.json -> config/pilot.local.json
 git check-ignore .local/ -> .local/
 git check-ignore appsettings.local.json -> appsettings.local.json
 git check-ignore config/foo.local.json -> config/foo.local.json
-git status --short -> empty
+git status --short -> empty before closeout edit
 ```
 
 local file 내용은 실제 connection string 없이 env var name만 사용한다.
@@ -71,7 +78,7 @@ dbMode=SqlServer
 dbEnv=CAAH_WORKSTART_DB_CONNECTION_STRING
 ```
 
-## 5. FakePlc localhost 상태
+## 5. FakePlc localhost 실행
 
 실행 전 확인:
 
@@ -80,37 +87,71 @@ Test-NetConnection localhost -Port 2004
 TcpTestSucceeded: False
 ```
 
-실제 DB env var가 없어 WPF SqlServer observation으로 이어질 수 없으므로 FakePlc process는 실행하지 않았다.
-
-종료 확인:
+FakePlc 실행 후:
 
 ```text
-FakePlc process: none
-WPF process: none
+Test-NetConnection localhost -Port 2004
+TcpTestSucceeded: True
 ```
+
+관찰 후 FakePlc process는 종료했다.
 
 ## 6. WPF FakePlcLocal + SqlServer Observation
 
-이번 세션에서는 수행하지 않았다.
+WPF 실행:
 
-사유:
+```text
+dotnet run --project src\CAAutomationHub.Wpf\CAAutomationHub.Wpf.csproj
+```
 
-- 실제 DB connection string env var가 없으면 WPF `FakePlcLocal + SqlServer` profile은 실제 DB 조회 기반 PilotPolling 상태를 만들 수 없다.
-- 이 상태에서 WPF를 실행하면 목적한 live observation이 아니라 safe fallback 또는 config failure 관찰이 되어 AH-PILOT-DB-LIVE-02의 증거로 적합하지 않다.
+WPF process에는 다음 env var만 주입했다.
 
-미관찰 항목:
+- `CAAH_WORKSTART_DB_CONNECTION_STRING=[REDACTED]`
+- `CAAH_WORKSTART_TEST_LOT_ID=[REDACTED]`
+- `CAAH_PILOT_CONFIG=config\pilot.local.json`
 
-- WPF 화면의 실제 DB 조회 기반 LOT ID / status / WorkStart 처리 결과
+UI Automation 관찰:
+
+```text
+WindowFound=True
+PollOnceInvoked=True
+Header status: FakePlcLocal pilot polling profile loaded for localhost:2004 with SqlServer DB mode.
+Request: WorkStart
+Status: WorkStartProcessed
+LOT ID: S0007652610B
+Start Req: True
+Complete Req: False
+Start ACK: True
+Complete ACK: -
+Result: Succeeded
+Error: None
+Log: WorkStart processed.
+```
+
+의미:
+
+- WPF 앱 실행 성공
+- MainWindow 하단 PilotPollingView 표시 확인
+- local config load 성공
+- profile = `FakePlcLocal`
+- db.mode = `SqlServer`
+- `Poll Once` 실행 성공
+- FakePlc read success
+- LOT ID 표시
 - SQL Server query result 반영
-- FakePlc 대상 ACK / payload write 결과
+- WorkStart 처리 결과 표시
+- Start ACK write가 FakePlc에 반영됨
+- crash 없음
 
 ## 7. 실제 PLC / Write / Secret Commit 확인
 
 - 실제 PLC host를 사용하지 않았다.
 - 실제 PLC read/write를 수행하지 않았다.
-- FakePlc write도 이번 세션에서는 수행하지 않았다.
+- FakePlc 대상 write만 허용 범위 안에서 수행했다.
 - connection string을 code/config/sample/closeout/commit에 기록하지 않았다.
+- DB host/user/password를 closeout에 기록하지 않았다.
 - `config/pilot.local.json`은 ignored local file이며 commit 대상이 아니다.
+- 관찰 후 WPF/FakePlc process가 남아 있지 않음을 확인했다.
 
 ## 8. Tests 결과
 
@@ -118,7 +159,7 @@ Fresh validation:
 
 ```text
 dotnet test tests\CAAutomationHub.PilotFlows.SqlServer.Tests\CAAutomationHub.PilotFlows.SqlServer.Tests.csproj
-PASS: failed 0, passed 4, skipped 1, total 5
+PASS: failed 0, passed 5, skipped 0, total 5
 
 dotnet test tests\CAAutomationHub.PilotComposition.Tests\CAAutomationHub.PilotComposition.Tests.csproj
 PASS: failed 0, passed 15, skipped 0, total 15
@@ -154,14 +195,25 @@ PASS: warning 0, error 0
 명령:
 
 ```text
-rg -n "Password=|Pwd=|User ID=|Data Source=|Initial Catalog=|Server=|TrustServerCertificate|Encrypt=|ca_erp|PlcFaDatabase" src tests docs config tools -g "!**/bin/**" -g "!**/obj/**"
+rg -n "Password=|Pwd=|User ID=|User Id=|Data Source=|Initial Catalog=|Server=|TrustServerCertificate|Encrypt=" src tests docs config tools -g "!**/bin/**" -g "!**/obj/**"
 ```
 
 결과:
 
 - actual connection string match 없음
 - 실제 DB host/user/password match 없음
-- match는 historical docs 안의 scan command 문자열뿐이다.
+- historical docs 안의 scan command 문자열 외 secret value match 없음
+
+추가 확인:
+
+```text
+actual DB token scan with private patterns: no matches
+```
+
+결과:
+
+- actual connection string 없음
+- closeout 문서에 실제 DB user/db name/host/password 평문 없음
 
 ## 11. Boundary Scan 결과
 
@@ -194,6 +246,7 @@ rg -n "<ProjectReference|PackageReference" src tests tools -g "*.csproj"
 Tracked:
 
 - `docs/harness/AH-PILOT-DB-LIVE-02.md`
+- `docs/harness/AH-PILOT-DB-LIVE.md`
 
 Local-only ignored:
 
@@ -201,20 +254,19 @@ Local-only ignored:
 
 ## 13. 다음 후보
 
-- 같은 PowerShell 프로세스 안에서 `CAAH_WORKSTART_DB_CONNECTION_STRING`과 `CAAH_WORKSTART_TEST_LOT_ID`를 설정하고 SQL Server smoke를 다시 실행한다.
-- smoke가 skip 없이 실행되면 FakePlc를 `localhost:2004` 경로에서 실행하고 WPF `FakePlcLocal + SqlServer` profile을 관찰한다.
-- WPF 화면에서 LOT ID, DB query status, WorkStart result, FakePlc write result를 기록한다.
+- NotFound / MultipleRows LOT ID를 별도로 준비해 WPF 표시 정책을 관찰한다.
+- WorkComplete request map 시나리오에서 SqlServer profile + FakePlc write 흐름을 관찰한다.
 - 실제 PLC는 별도 승인 전까지 계속 미사용 상태로 둔다.
 
 ## 14. Self-Check
 
-판정: `PARTIAL`
+판정: `ACCEPT`
 
 근거:
 
-- secret hygiene, ignored local config guard, tests/build, boundary/reference scan은 확인했다.
-- 실제 SQL Server env var가 없어 DB smoke는 skip되었다.
-- 실제 DB 조회 기반 WPF PilotPollingView 관찰은 수행하지 않았다.
-- 실제 PLC write 가능성은 발생하지 않았다.
-
-`ACCEPT`로 올리려면 env var가 설정된 세션에서 SQL Server smoke가 skip 없이 실행되고, FakePlcLocal + SqlServer WPF 화면 관찰까지 완료되어야 한다.
+- SQL Server env smoke가 skip 없이 통과했다.
+- FakePlc `localhost:2004` listener와 WPF `FakePlcLocal + SqlServer` profile을 함께 관찰했다.
+- WPF PilotPollingView에서 실제 DB 조회 기반 WorkStart `Succeeded` 흐름을 확인했다.
+- write는 실제 PLC가 아니라 FakePlc에만 수행했다.
+- secret value는 code/config/sample/closeout/commit에 남기지 않았다.
+- Runtime / FlowDefinitions / WPF direct SqlClient boundary를 오염시키지 않았다.
