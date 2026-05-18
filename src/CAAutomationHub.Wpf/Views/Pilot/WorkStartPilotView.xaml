@@ -27,8 +27,8 @@
 
                 <Button Grid.Column="1"
                         Content="착공 실행"
+                        Command="{Binding ExecuteOnceCommand}"
                         Style="{StaticResource SecondaryButtonStyle}"
-                        IsEnabled="False"
                         MinWidth="92"
                         VerticalAlignment="Top"/>
             </Grid>
