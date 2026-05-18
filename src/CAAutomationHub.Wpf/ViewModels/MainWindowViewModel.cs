@@ -1,6 +1,8 @@
 using System.IO;
 using CAAutomationHub.PilotComposition.Configuration;
 using CAAutomationHub.PilotComposition.Polling;
+using CAAutomationHub.Wpf.Adapters;
+using CAAutomationHub.Wpf.Services;
 using CAAutomationHub.Wpf.ViewModels.Pilot;
 
 namespace CAAutomationHub.Wpf.ViewModels;
@@ -10,7 +12,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private const string ConfigPathEnvironmentVariable = "CAAH_PILOT_CONFIG";
 
     public MainWindowViewModel()
-        : this(new DashboardViewModel(), CreateFallbackPilotPolling(), "Fake pilot polling profile loaded.")
+        : this(CreateDashboardViewModel(), CreateFallbackPilotPolling(), "Fake pilot polling profile loaded.")
     {
     }
 
@@ -30,15 +32,18 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public string PilotStatusMessage { get; }
 
-    public static MainWindowViewModel CreateDefaultPilotLocal(string? explicitConfigurationPath = null)
+    public static MainWindowViewModel CreateDefaultPilotLocal(
+        string? explicitConfigurationPath = null,
+        string? plcCardsConfigurationPath = null)
     {
         try
         {
+            var dashboard = CreateDashboardViewModel(plcCardsConfigurationPath);
             var configurationPath = explicitConfigurationPath ?? ResolveLocalConfigurationPath();
             if (configurationPath is null)
             {
                 return new MainWindowViewModel(
-                    new DashboardViewModel(),
+                    dashboard,
                     CreateFallbackPilotPolling(),
                     "Pilot local config not found; fake profile loaded.");
             }
@@ -47,14 +52,14 @@ public sealed class MainWindowViewModel : ViewModelBase
             var composition = PilotLocalComposition.Create(configuration);
 
             return new MainWindowViewModel(
-                new DashboardViewModel(),
+                dashboard,
                 new PilotPollingViewModel(composition.PollingService),
                 composition.StatusMessage);
         }
         catch (Exception ex)
         {
             return new MainWindowViewModel(
-                new DashboardViewModel(),
+                CreateDashboardViewModel(plcCardsConfigurationPath),
                 CreateFallbackPilotPolling(),
                 $"Pilot local config failed safely; fake profile loaded. {ex.Message}");
         }
@@ -126,5 +131,15 @@ public sealed class MainWindowViewModel : ViewModelBase
         };
 
         return new PilotPollingViewModel(PilotLocalComposition.Create(configuration).PollingService);
+    }
+
+    private static DashboardViewModel CreateDashboardViewModel(string? plcCardsConfigurationPath = null)
+    {
+        var store = string.IsNullOrWhiteSpace(plcCardsConfigurationPath)
+            ? JsonPlcDashboardConfigurationStore.CreateDefault()
+            : new JsonPlcDashboardConfigurationStore(plcCardsConfigurationPath);
+        var adapter = new FakeDashboardRuntimeAdapter(store);
+
+        return new DashboardViewModel(adapter, adapter);
     }
 }

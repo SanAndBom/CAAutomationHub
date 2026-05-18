@@ -7,10 +7,17 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
 {
     private readonly object _syncRoot = new();
     private readonly List<PlcDashboardConfiguration> _configurations;
+    private readonly IPlcDashboardConfigurationStore? _configurationStore;
     private int _snapshotIndex;
 
     public FakeDashboardRuntimeAdapter()
-        => _configurations = CreateDefaultConfigurations();
+        => _configurations = DefaultPlcDashboardConfigurations.Create();
+
+    public FakeDashboardRuntimeAdapter(IPlcDashboardConfigurationStore configurationStore)
+    {
+        _configurationStore = configurationStore ?? throw new ArgumentNullException(nameof(configurationStore));
+        _configurations = _configurationStore.Load().ToList();
+    }
 
     public DashboardSnapshot GetSnapshot()
     {
@@ -62,8 +69,8 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
     {
         lock (_syncRoot)
         {
-            var nextIndex = GetNextConfigurationIndex(_configurations);
-            return CreateDefaultConfiguration(nextIndex);
+            var nextIndex = DefaultPlcDashboardConfigurations.GetNextConfigurationIndex(_configurations);
+            return DefaultPlcDashboardConfigurations.CreateDefaultConfiguration(nextIndex);
         }
     }
 
@@ -71,7 +78,7 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
     {
         lock (_syncRoot)
         {
-            var nextIndex = GetNextConfigurationIndex(_configurations);
+            var nextIndex = DefaultPlcDashboardConfigurations.GetNextConfigurationIndex(_configurations);
             var normalized = configuration with
             {
                 PlcId = $"PLC-{nextIndex:00}",
@@ -81,6 +88,7 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
             };
 
             _configurations.Add(normalized);
+            SaveConfigurations();
             return normalized;
         }
     }
@@ -93,6 +101,7 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
             if (index < 0) return;
 
             _configurations[index] = configuration;
+            SaveConfigurations();
         }
     }
 
@@ -101,50 +110,8 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
         lock (_syncRoot)
         {
             _configurations.RemoveAll(configuration => configuration.PlcId == plcId);
+            SaveConfigurations();
         }
-    }
-
-    private static List<PlcDashboardConfiguration> CreateDefaultConfigurations()
-        => Enumerable.Range(1, 5)
-            .Select(index => CreateDefaultConfiguration(
-                index,
-                $"Press Line PLC {index:00}",
-                $"Line-{((index - 1) % 4) + 1}",
-                $"Press line PLC {index:00} fake configuration",
-                500 + (index * 50),
-                isEnabled: index != 5))
-            .ToList();
-
-    private static PlcDashboardConfiguration CreateDefaultConfiguration(
-        int index,
-        string? plcName = null,
-        string lineName = "Line-1",
-        string description = "신규 PLC",
-        int pollingIntervalMs = 1000,
-        bool isEnabled = true)
-        => new(
-            $"PLC-{index:00}",
-            plcName ?? $"PLC {index:00}",
-            lineName,
-            description,
-            $"192.168.0.{20 + index}",
-            2004,
-            pollingIntervalMs,
-            800,
-            5,
-            5,
-            AutoReconnect: true,
-            ConnectOnStartup: true,
-            IsEnabled: isEnabled);
-
-    private static int GetNextConfigurationIndex(IEnumerable<PlcDashboardConfiguration> configurations)
-    {
-        var maxIndex = configurations
-            .Select(configuration => GetStableIndex(configuration.PlcId, fallbackIndex: 0))
-            .DefaultIfEmpty(0)
-            .Max();
-
-        return maxIndex + 1;
     }
 
     private static PlcConnectionState GetCyclingState(int phase)
@@ -161,7 +128,7 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
         int jitter,
         int tick)
     {
-        var index = GetStableIndex(configuration.PlcId, fallbackIndex);
+        var index = DefaultPlcDashboardConfigurations.GetStableIndex(configuration.PlcId, fallbackIndex);
         var state = configuration.IsEnabled ? GetState(index, congestionPhase) : PlcConnectionState.Inactive;
         var lastResponseMs = state switch
         {
@@ -222,13 +189,6 @@ public sealed class FakeDashboardRuntimeAdapter : IRuntimeDashboardAdapter, IPlc
             _ => PlcConnectionState.Healthy
         };
 
-    private static int GetStableIndex(string plcId, int fallbackIndex)
-    {
-        const string prefix = "PLC-";
-        return plcId.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
-            && int.TryParse(plcId[prefix.Length..], out var index)
-            ? index
-            : fallbackIndex;
-    }
-
+    private void SaveConfigurations()
+        => _configurationStore?.Save(_configurations.ToArray());
 }

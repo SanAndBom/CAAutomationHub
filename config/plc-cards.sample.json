@@ -1,0 +1,19 @@
+{
+  "plcs": [
+    {
+      "id": "fakeplc-local",
+      "displayName": "Fake PLC Local",
+      "lineName": "Local Test",
+      "host": "localhost",
+      "port": 2004,
+      "status": "Unknown",
+      "pollingIntervalMs": 500,
+      "timeoutMs": 800,
+      "reconnectIntervalSeconds": 5,
+      "maxRetryCount": 5,
+      "autoReconnect": true,
+      "connectOnStartup": true,
+      "isEnabled": true
+    }
+  ]
+}

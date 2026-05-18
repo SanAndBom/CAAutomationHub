@@ -13,18 +13,16 @@
     <DockPanel>
         <Border DockPanel.Dock="Top" Background="{StaticResource HeaderBackgroundBrush}" Padding="20,12">
             <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
                 <TextBlock Text="CAAutomationHub" FontSize="24" FontWeight="SemiBold" Foreground="White" />
-                <TextBlock Grid.Column="1" Text="{Binding PilotStatusMessage}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Bottom" />
+                <TextBlock Grid.Column="1" Text="{Binding PilotStatusMessage}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <Button Grid.Column="2" Content="Pilot Monitor 열기" Click="OnOpenPilotMonitorClick" Style="{StaticResource SecondaryButtonStyle}"/>
             </Grid>
         </Border>
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <views:DashboardView Grid.Row="0"/>
-            <pilot:PilotPollingView Grid.Row="1" DataContext="{Binding PilotPolling}" Margin="20,0,20,20"/>
-        </Grid>
+        <views:DashboardView DataContext="{Binding Dashboard}"/>
     </DockPanel>
 </Window>

@@ -117,19 +117,58 @@ public sealed class PilotPollingViewBindingTests
     }
 
     [Fact]
-    public void MainWindow_ContainsPilotPollingViewBoundToPilotPollingViewModel()
+    public void MainWindow_ExposesPilotMonitorButtonWithoutEmbeddingPilotPollingView()
     {
         var document = XDocument.Load(FindRepositoryFile(
             "src",
             "CAAutomationHub.Wpf",
             "MainWindow.xaml"));
 
+        XNamespace wpf = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
+        XNamespace pilot = "clr-namespace:CAAutomationHub.Wpf.Views.Pilot";
+        var embeddedPilotViews = document
+            .Descendants(pilot + "PilotPollingView")
+            .ToArray();
+        var pilotMonitorButton = document
+            .Descendants(wpf + "Button")
+            .Single(element => (string?)element.Attribute("Content") == "Pilot Monitor 열기");
+
+        Assert.Empty(embeddedPilotViews);
+        Assert.Equal("OnOpenPilotMonitorClick", (string?)pilotMonitorButton.Attribute("Click"));
+    }
+
+    [Fact]
+    public void MainWindow_BindsDashboardViewToMainWindowDashboardViewModel()
+    {
+        var document = XDocument.Load(FindRepositoryFile(
+            "src",
+            "CAAutomationHub.Wpf",
+            "MainWindow.xaml"));
+
+        XNamespace views = "clr-namespace:CAAutomationHub.Wpf.Views";
+        var dashboardView = document
+            .Descendants(views + "DashboardView")
+            .Single();
+
+        Assert.Equal("{Binding Dashboard}", (string?)dashboardView.Attribute("DataContext"));
+    }
+
+    [Fact]
+    public void PilotMonitorWindow_HostsPilotPollingViewBoundToWindowDataContext()
+    {
+        var document = XDocument.Load(FindRepositoryFile(
+            "src",
+            "CAAutomationHub.Wpf",
+            "Views",
+            "Pilot",
+            "PilotMonitorWindow.xaml"));
+
         XNamespace pilot = "clr-namespace:CAAutomationHub.Wpf.Views.Pilot";
         var pilotView = document
             .Descendants(pilot + "PilotPollingView")
             .Single();
 
-        Assert.Equal("{Binding PilotPolling}", (string?)pilotView.Attribute("DataContext"));
+        Assert.Null((string?)pilotView.Attribute("DataContext"));
     }
 
     private static string FindRepositoryFile(params string[] relativePathParts)
