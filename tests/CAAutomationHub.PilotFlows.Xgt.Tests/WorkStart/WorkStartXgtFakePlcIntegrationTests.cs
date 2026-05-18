@@ -1,0 +1,183 @@
+using System.Net;
+using System.Net.Sockets;
+using AutomationHub.XgtDriverCore.Client;
+using AutomationHub.XgtDriverCore.FakePlc.Configuration;
+using AutomationHub.XgtDriverCore.FakePlc.Runtime;
+using AutomationHub.XgtDriverCore.Transport;
+using CAAutomationHub.PilotFlows.WorkStart;
+using CAAutomationHub.PilotFlows.Xgt.WorkStart;
+
+namespace CAAutomationHub.PilotFlows.Xgt.Tests.WorkStart;
+
+public sealed class WorkStartXgtFakePlcIntegrationTests
+{
+    private const int FakePlcStartSignalWordIndex = 83;
+    private const int LotId1WordOffset = WorkStartReadBlockLayout.DefaultLotId1WordOffset;
+    private const int LotId2WordOffset = WorkStartReadBlockLayout.DefaultLotId2WordOffset;
+    private const int LotIdWordLength = WorkStartReadBlockLayout.DefaultLotIdWordLength;
+
+    [Fact]
+    public async Task ReadWorkStartBlockAsync_WithFakePlcMemoryMap_ReadsLotIdsAndStartSignalUsingTestSpecificLayout()
+    {
+        await using var fakePlc = InProcessFakePlcServer.Start(CreateRuntime());
+        await using var session = CreateSession(fakePlc.Port);
+        var operations = new WorkStartXgtPlcOperations(session, WorkStartXgtReadOptions.Default);
+
+        await operations.EnsureConnectedAsync();
+
+        var result = await operations.ReadWorkStartBlockAsync();
+
+        Assert.Equal(WorkStartReadBlockOperationStatus.Success, result.Status);
+        var data = result.Data;
+        Assert.NotNull(data);
+        Assert.Equal(WorkStartReadBlockLayout.DefaultReadWordCount * 2, data.Length);
+
+        Assert.True(
+            WorkStartReadBlockInterpreter.IsStartSignalActive(data, FakePlcStartSignalWordIndex));
+
+        var lotId1 = WorkStartReadBlockInterpreter.ExtractLotId(data, LotId1WordOffset, LotIdWordLength);
+        var lotId2 = WorkStartReadBlockInterpreter.ExtractLotId(data, LotId2WordOffset, LotIdWordLength);
+        var selectedLotId = WorkStartReadBlockInterpreter.SelectLotId(lotId1.LotId, lotId2.LotId);
+
+        Assert.True(lotId1.IsInRange);
+        Assert.True(lotId2.IsInRange);
+        Assert.Equal("S0007652610B", lotId1.LotId);
+        Assert.Equal(string.Empty, lotId2.LotId);
+        Assert.True(selectedLotId.HasSelection);
+        Assert.Equal("S0007652610B", selectedLotId.SelectedLotId);
+        Assert.Equal(WorkStartLotIdSelectionSource.LotId1, selectedLotId.Source);
+    }
+
+    private static XgtSession CreateSession(int port)
+    {
+        var transport = new TcpTransport(new XgtTransportOptions
+        {
+            Host = "127.0.0.1",
+            Port = port,
+            ConnectTimeout = TimeSpan.FromSeconds(1),
+            SendTimeout = TimeSpan.FromSeconds(1),
+            ReceiveTimeout = TimeSpan.FromSeconds(1)
+        });
+
+        return new XgtSession(transport);
+    }
+
+    private static FakePlcRuntime CreateRuntime()
+    {
+        var config = new FakePlcMapConfig
+        {
+            BaseBlocks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                [FakePlcMemoryImage.Db10000] = new('0', WorkStartXgtReadOptions.DefaultReadWordCount * 2 * 2),
+                [FakePlcMemoryImage.Db11000] = new('0', 70 * 2 * 2),
+                [FakePlcMemoryImage.Db11410] = "0000",
+                [FakePlcMemoryImage.Db11416] = "0000",
+                [FakePlcMemoryImage.Db11418] = "0000"
+            },
+            Scenario = new FakePlcScenarioConfig
+            {
+                LotId1 = "S0007652610B",
+                LotId2 = string.Empty,
+                StartSignal = true,
+                CompleteSignal = false,
+                HeartbeatEnabled = true,
+                HeartbeatInitialValue = true
+            },
+            Rules = new FakePlcRuleConfig()
+        };
+
+        return new FakePlcRuntime(
+            FakePlcScenarioInitializer.CreateMemoryImage(config),
+            config.Rules);
+    }
+
+    private sealed class InProcessFakePlcServer : IAsyncDisposable
+    {
+        private readonly TcpListener _listener;
+        private readonly FakePlcRuntime _runtime;
+        private readonly CancellationTokenSource _shutdown = new();
+        private readonly List<Task> _clientTasks = [];
+        private readonly Task _acceptLoop;
+
+        private InProcessFakePlcServer(FakePlcRuntime runtime)
+        {
+            _runtime = runtime;
+            _listener = new TcpListener(IPAddress.Loopback, port: 0);
+            _listener.Start();
+            Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
+            _acceptLoop = Task.Run(AcceptLoopAsync);
+        }
+
+        public int Port { get; }
+
+        public static InProcessFakePlcServer Start(FakePlcRuntime runtime) => new(runtime);
+
+        public async ValueTask DisposeAsync()
+        {
+            _shutdown.Cancel();
+            _listener.Stop();
+
+            try
+            {
+                await _acceptLoop.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            if (_clientTasks.Count > 0)
+            {
+                await Task.WhenAll(_clientTasks).ConfigureAwait(false);
+            }
+
+            _shutdown.Dispose();
+        }
+
+        private async Task AcceptLoopAsync()
+        {
+            while (!_shutdown.IsCancellationRequested)
+            {
+                TcpClient client;
+                try
+                {
+                    client = await _listener.AcceptTcpClientAsync(_shutdown.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+                catch (ObjectDisposedException)
+                {
+                    return;
+                }
+
+                _clientTasks.Add(Task.Run(() => HandleClientAsync(client)));
+            }
+        }
+
+        private async Task HandleClientAsync(TcpClient client)
+        {
+            try
+            {
+                await FakePlcProtocolHandler.HandleClientAsync(
+                    client,
+                    _runtime,
+                    logPrefix: "[test-fake-plc]",
+                    _shutdown.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            finally
+            {
+                client.Dispose();
+            }
+        }
+    }
+}
