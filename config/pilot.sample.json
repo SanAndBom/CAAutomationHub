@@ -1,0 +1,19 @@
+{
+  "profile": "FakePlcLocal",
+  "plc": {
+    "targetId": "fakeplc-local",
+    "host": "localhost",
+    "port": 2004,
+    "readStartVariable": "%DB10000",
+    "readWordCount": 90,
+    "startSignalWordIndex": 83,
+    "completeSignalWordIndex": 84,
+    "lotId1WordOffset": 0,
+    "lotId2WordOffset": 10,
+    "lotIdWordLength": 6
+  },
+  "db": {
+    "mode": "Fake",
+    "connectionEnvironmentVariable": "CAAH_WORKSTART_DB_CONNECTION_STRING"
+  }
+}

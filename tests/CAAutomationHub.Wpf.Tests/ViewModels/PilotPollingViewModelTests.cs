@@ -1,4 +1,5 @@
 using CAAutomationHub.PilotApp.Polling;
+using CAAutomationHub.Wpf.ViewModels;
 using CAAutomationHub.Wpf.ViewModels.Pilot;
 
 namespace CAAutomationHub.Wpf.Tests.ViewModels;
@@ -54,6 +55,15 @@ public sealed class PilotPollingViewModelTests
         {
             Assert.DoesNotContain(forbiddenAssemblyName, referencedAssemblyNames);
         }
+    }
+
+    [Fact]
+    public void MainWindowViewModel_CreateDefaultPilotLocal_ProvidesPilotPollingViewModel()
+    {
+        var viewModel = MainWindowViewModel.CreateDefaultPilotLocal();
+
+        Assert.NotNull(viewModel.PilotPolling);
+        Assert.False(string.IsNullOrWhiteSpace(viewModel.PilotStatusMessage));
     }
 
     private sealed class FakePilotPollingService : IPilotPollingService

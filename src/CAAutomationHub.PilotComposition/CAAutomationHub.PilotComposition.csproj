@@ -9,5 +9,6 @@
   <ItemGroup>
     <ProjectReference Include="..\CAAutomationHub.PilotApp\CAAutomationHub.PilotApp.csproj" />
     <ProjectReference Include="..\CAAutomationHub.PilotFlows\CAAutomationHub.PilotFlows.csproj" />
+    <ProjectReference Include="..\CAAutomationHub.PilotFlows.Xgt\CAAutomationHub.PilotFlows.Xgt.csproj" />
   </ItemGroup>
 </Project>

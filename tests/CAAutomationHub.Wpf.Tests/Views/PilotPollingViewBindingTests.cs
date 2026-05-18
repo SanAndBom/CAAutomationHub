@@ -26,6 +26,22 @@ public sealed class PilotPollingViewBindingTests
         Assert.Equal("{Binding PollOnceCommand}", buttons["Poll Once"]);
     }
 
+    [Fact]
+    public void MainWindow_ContainsPilotPollingViewBoundToPilotPollingViewModel()
+    {
+        var document = XDocument.Load(FindRepositoryFile(
+            "src",
+            "CAAutomationHub.Wpf",
+            "MainWindow.xaml"));
+
+        XNamespace pilot = "clr-namespace:CAAutomationHub.Wpf.Views.Pilot";
+        var pilotView = document
+            .Descendants(pilot + "PilotPollingView")
+            .Single();
+
+        Assert.Equal("{Binding PilotPolling}", (string?)pilotView.Attribute("DataContext"));
+    }
+
     private static string FindRepositoryFile(params string[] relativePathParts)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

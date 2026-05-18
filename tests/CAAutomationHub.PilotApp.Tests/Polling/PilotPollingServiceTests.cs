@@ -60,6 +60,20 @@ public sealed class PilotPollingServiceTests
     }
 
     [Fact]
+    public async Task PollOnceAsync_ReturnsFailedSnapshot_WhenRequestStateReadThrows()
+    {
+        var port = new ThrowingPilotPollingFlowPort(new InvalidOperationException("connect failed"));
+        var service = CreateService(port);
+
+        var snapshot = await service.PollOnceAsync();
+
+        Assert.Equal(PilotPollingStatus.Failed, snapshot.Status);
+        Assert.Equal("ReadFailed", snapshot.LastResultStatus);
+        Assert.Equal("ReadFailed", snapshot.LastErrorCode);
+        Assert.Contains("connect failed", snapshot.LastMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task PollOnceAsync_ClearsStartAck_WhenStartRequestOffAfterAckOn()
     {
         var port = new FakePilotPollingFlowPort
@@ -153,7 +167,7 @@ public sealed class PilotPollingServiceTests
         Assert.DoesNotContain(typeNames, static name => name.Contains(string.Join("", "Channel", "Polling", "Result"), StringComparison.OrdinalIgnoreCase));
     }
 
-    private static PilotPollingService CreateService(FakePilotPollingFlowPort port)
+    private static PilotPollingService CreateService(IPilotPollingFlowPort port)
         => new(
             port,
             new PilotPollingOptions { TargetId = "PLC-01" },
@@ -231,6 +245,37 @@ public sealed class PilotPollingServiceTests
             ClearWorkCompleteAckCallCount++;
             return ValueTask.FromResult(CompleteAckOffResult);
         }
+    }
+
+    private sealed class ThrowingPilotPollingFlowPort : IPilotPollingFlowPort
+    {
+        private readonly Exception _exception;
+
+        public ThrowingPilotPollingFlowPort(Exception exception)
+        {
+            _exception = exception;
+        }
+
+        public ValueTask<PilotPollingRequestState> ReadRequestStateAsync(
+            CancellationToken cancellationToken = default) =>
+            ValueTask.FromException<PilotPollingRequestState>(_exception);
+
+        public ValueTask<WorkStartExecutionResult> ExecuteWorkStartAsync(
+            WorkStartExecutionRequest request,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public ValueTask<WorkStartAckOffResult> ClearWorkStartAckAsync(
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public ValueTask<WorkCompleteAckResult> WriteWorkCompleteAckOnAsync(
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public ValueTask<WorkCompleteAckResult> ClearWorkCompleteAckAsync(
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
     }
 
     private sealed class FixedClock : IWorkStartExecutionClock

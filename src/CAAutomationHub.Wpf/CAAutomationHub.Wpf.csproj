@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CAAutomationHub.Contracts\CAAutomationHub.Contracts.csproj" />
     <ProjectReference Include="..\CAAutomationHub.PilotApp\CAAutomationHub.PilotApp.csproj" />
+    <ProjectReference Include="..\CAAutomationHub.PilotComposition\CAAutomationHub.PilotComposition.csproj" />
     <ProjectReference Include="..\CAAutomationHub.Runtime\CAAutomationHub.Runtime.csproj" />
   </ItemGroup>
 </Project>

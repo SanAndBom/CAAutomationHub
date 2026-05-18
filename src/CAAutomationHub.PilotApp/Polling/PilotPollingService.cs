@@ -44,9 +44,25 @@ public sealed class PilotPollingService : IPilotPollingService
 
     public async ValueTask<PilotPollingSnapshot> PollOnceAsync(CancellationToken cancellationToken = default)
     {
-        var requestState = await _flowPort
-            .ReadRequestStateAsync(cancellationToken)
-            .ConfigureAwait(false);
+        PilotPollingRequestState requestState;
+        try
+        {
+            requestState = await _flowPort
+                .ReadRequestStateAsync(cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            requestState = new PilotPollingRequestState
+            {
+                ReadSucceeded = false,
+                Message = $"Polling request read failed: {ex.Message}"
+            };
+        }
 
         if (!requestState.ReadSucceeded)
         {
