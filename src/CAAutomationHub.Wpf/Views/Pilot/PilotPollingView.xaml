@@ -1,0 +1,136 @@
+<UserControl x:Class="CAAutomationHub.Wpf.Views.Pilot.PilotPollingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Style="{StaticResource CardBorderStyle}" Padding="14">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock Text="Pilot Polling"
+                               Foreground="White"
+                               FontSize="18"
+                               FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding LastUpdatedAt, StringFormat=Last updated: {0}, TargetNullValue=Last updated: -}"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               Margin="0,3,0,0"/>
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Content="Polling 시작"
+                        Command="{Binding StartPollingCommand}"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        MinWidth="96"
+                        Margin="0,0,8,0"
+                        VerticalAlignment="Top"/>
+                <Button Grid.Column="2"
+                        Content="Polling 중지"
+                        Command="{Binding StopPollingCommand}"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        MinWidth="96"
+                        Margin="0,0,8,0"
+                        VerticalAlignment="Top"/>
+                <Button Grid.Column="3"
+                        Content="Poll Once"
+                        Command="{Binding PollOnceCommand}"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        MinWidth="88"
+                        VerticalAlignment="Top"/>
+            </Grid>
+
+            <Grid Grid.Row="1" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Background="#1A2638" CornerRadius="4" Padding="10" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="Running" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding IsPolling}" Foreground="White" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Background="#1A2638" CornerRadius="4" Padding="10" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="Request" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding LastRequestKind}" Foreground="White" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Background="#1A2638" CornerRadius="4" Padding="10" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="Status" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding LastStatus, TargetNullValue=-}" Foreground="White" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="3" Background="#1A2638" CornerRadius="4" Padding="10">
+                    <StackPanel>
+                        <TextBlock Text="LOT ID" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding LastSelectedLotId, TargetNullValue=-}" Foreground="White" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="2" Margin="0,0,0,12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Start Req" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastStartRequestActive}" Foreground="White" Margin="0,0,24,8"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="Complete Req" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="0" Grid.Column="3" Text="{Binding LastCompleteRequestActive}" Foreground="White" Margin="0,0,0,8"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Start ACK" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastStartAckState, TargetNullValue=-}" Foreground="White" Margin="0,0,24,8"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="Complete ACK" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,8"/>
+                <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding LastCompleteAckState, TargetNullValue=-}" Foreground="White" Margin="0,0,0,8"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Result" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding LastResultStatus, TargetNullValue=-}" Foreground="White" Margin="0,0,24,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="2" Text="Error" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,14,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="3" Text="{Binding LastErrorCode, TargetNullValue=-}" Foreground="White"/>
+            </Grid>
+
+            <ItemsControl Grid.Row="3" ItemsSource="{Binding LogEntries}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,4">
+                            <Run Text="{Binding OccurredAt}"/>
+                            <Run Text=" "/>
+                            <Run Text="{Binding RequestKind}"/>
+                            <Run Text=" "/>
+                            <Run Text="{Binding Status}"/>
+                            <Run Text=" "/>
+                            <Run Text="{Binding Message}"/>
+                        </TextBlock>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+    </Border>
+</UserControl>
