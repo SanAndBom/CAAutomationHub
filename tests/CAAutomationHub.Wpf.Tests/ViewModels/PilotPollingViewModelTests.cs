@@ -80,6 +80,25 @@ public sealed class PilotPollingViewModelTests
     }
 
     [Fact]
+    public void WorkStartScenario_ShowsAckOffObservationAfterRequestOff()
+    {
+        var service = new WorkStartAckOffPilotPollingService();
+        var viewModel = new PilotPollingViewModel(service);
+
+        viewModel.PollOnceCommand.Execute(null);
+
+        Assert.Equal("WorkStartProcessed", viewModel.LastStatus);
+        Assert.Equal("WorkStart WorkStartProcessed Start ACK: True", viewModel.ScenarioObservation);
+
+        viewModel.PollOnceCommand.Execute(null);
+
+        Assert.Equal("WorkStartAckOffWritten", viewModel.LastStatus);
+        Assert.False(viewModel.LastStartAckState);
+        Assert.Equal("WorkStart WorkStartAckOffWritten Start ACK: False", viewModel.ScenarioObservation);
+        Assert.Equal(2, viewModel.TrendPoints.Count);
+    }
+
+    [Fact]
     public void ViewModel_DoesNotReferenceForbiddenRuntimeOrDriverTypes()
     {
         var referencedAssemblyNames = typeof(PilotPollingViewModel)
@@ -251,6 +270,120 @@ public sealed class PilotPollingViewModelTests
             };
             SnapshotChanged?.Invoke(this, new PilotPollingSnapshotChangedEventArgs(CurrentSnapshot));
             return CurrentSnapshot;
+        }
+    }
+
+    private sealed class WorkStartAckOffPilotPollingService : IPilotPollingService
+    {
+        public event EventHandler<PilotPollingSnapshotChangedEventArgs>? SnapshotChanged;
+
+        private int _sequence;
+
+        public PilotPollingSnapshot CurrentSnapshot { get; private set; } =
+            PilotPollingSnapshot.Initial with
+            {
+                PlcCardStatus = PilotPlcCardStatus.CreateInitial("fakeplc-local", "localhost:2004")
+            };
+
+        public ValueTask StartAsync(CancellationToken cancellationToken = default) =>
+            ValueTask.CompletedTask;
+
+        public ValueTask StopAsync(CancellationToken cancellationToken = default) =>
+            ValueTask.CompletedTask;
+
+        public ValueTask<PilotPollingSnapshot> PollOnceAsync(CancellationToken cancellationToken = default)
+        {
+            _sequence++;
+            CurrentSnapshot = _sequence == 1
+                ? CreateStartAckOnSnapshot()
+                : CreateStartAckOffSnapshot();
+            SnapshotChanged?.Invoke(this, new PilotPollingSnapshotChangedEventArgs(CurrentSnapshot));
+            return ValueTask.FromResult(CurrentSnapshot);
+        }
+
+        private PilotPollingSnapshot CreateStartAckOnSnapshot()
+        {
+            var timestamp = DateTimeOffset.Parse("2026-05-18T10:10:00+09:00");
+            return CurrentSnapshot with
+            {
+                LastRequestKind = WorkRequestKind.WorkStart,
+                LastSelectedLotId = "LOT-START-01",
+                LastStartRequestActive = true,
+                LastStartAckState = true,
+                Status = PilotPollingStatus.WorkStartProcessed,
+                LastResultStatus = "Succeeded",
+                LastErrorCode = "None",
+                LastUpdatedAt = timestamp,
+                PlcCardStatus = CurrentSnapshot.PlcCardStatus with
+                {
+                    ConnectionStatus = PilotPlcConnectionStatus.Connected,
+                    PollingStatus = PilotPollingStatus.WorkStartProcessed.ToString(),
+                    LastReadResultStatus = "Succeeded",
+                    LastRequestKind = WorkRequestKind.WorkStart,
+                    SelectedLotId = "LOT-START-01",
+                    StartRequestActive = true,
+                    StartAckState = true,
+                    LastResultStatus = "Succeeded",
+                    LastErrorCode = "None",
+                    LastUpdatedAt = timestamp
+                },
+                TrendPoints =
+                [
+                    new PilotPollingTrendPoint(
+                        1,
+                        timestamp,
+                        true,
+                        WorkRequestKind.WorkStart,
+                        DurationMs: 15,
+                        "LOT-START-01",
+                        "Succeeded",
+                        "None")
+                ],
+                LogEntries = []
+            };
+        }
+
+        private PilotPollingSnapshot CreateStartAckOffSnapshot()
+        {
+            var timestamp = DateTimeOffset.Parse("2026-05-18T10:10:03+09:00");
+            return CurrentSnapshot with
+            {
+                LastRequestKind = WorkRequestKind.WorkStart,
+                LastSelectedLotId = "LOT-START-01",
+                LastStartRequestActive = false,
+                LastStartAckState = false,
+                Status = PilotPollingStatus.WorkStartAckOffWritten,
+                LastResultStatus = "AckOffWritten",
+                LastErrorCode = null,
+                LastUpdatedAt = timestamp,
+                PlcCardStatus = CurrentSnapshot.PlcCardStatus with
+                {
+                    ConnectionStatus = PilotPlcConnectionStatus.Connected,
+                    PollingStatus = PilotPollingStatus.WorkStartAckOffWritten.ToString(),
+                    LastReadResultStatus = "Succeeded",
+                    LastRequestKind = WorkRequestKind.WorkStart,
+                    SelectedLotId = "LOT-START-01",
+                    StartRequestActive = false,
+                    StartAckState = false,
+                    LastResultStatus = "AckOffWritten",
+                    LastErrorCode = null,
+                    LastUpdatedAt = timestamp
+                },
+                TrendPoints =
+                [
+                    CurrentSnapshot.TrendPoints[0],
+                    new PilotPollingTrendPoint(
+                        2,
+                        timestamp,
+                        true,
+                        WorkRequestKind.WorkStart,
+                        DurationMs: 8,
+                        "LOT-START-01",
+                        "AckOffWritten",
+                        null)
+                ],
+                LogEntries = []
+            };
         }
     }
 

@@ -71,6 +71,26 @@ public sealed class PilotPollingViewBindingTests
     }
 
     [Fact]
+    public void ScenarioObservation_BindsToScenarioObservationStatusLine()
+    {
+        var document = XDocument.Load(FindRepositoryFile(
+            "src",
+            "CAAutomationHub.Wpf",
+            "Views",
+            "Pilot",
+            "PilotPollingView.xaml"));
+
+        var textValues = document
+            .Descendants()
+            .Select(element => (string?)element.Attribute("Text"))
+            .Where(text => text is not null)
+            .Cast<string>()
+            .ToArray();
+
+        Assert.Contains("{Binding ScenarioObservation}", textValues);
+    }
+
+    [Fact]
     public void MainWindow_ContainsPilotPollingViewBoundToPilotPollingViewModel()
     {
         var document = XDocument.Load(FindRepositoryFile(

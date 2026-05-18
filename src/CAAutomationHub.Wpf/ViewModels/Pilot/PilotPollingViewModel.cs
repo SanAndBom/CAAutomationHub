@@ -24,6 +24,7 @@ public sealed class PilotPollingViewModel : ViewModelBase
     private string _plcCardTargetLabel = "-";
     private string _plcCardConnectionStatus = PilotPlcConnectionStatus.Unknown.ToString();
     private string _plcCardLastReadResultStatus = "-";
+    private string _scenarioObservation = "-";
     private IReadOnlyList<PilotPollingTrendPoint> _trendPoints = [];
     private IReadOnlyList<PilotPollingLogEntry> _logEntries = [];
 
@@ -154,6 +155,12 @@ public sealed class PilotPollingViewModel : ViewModelBase
         private set => SetProperty(ref _plcCardLastReadResultStatus, value);
     }
 
+    public string ScenarioObservation
+    {
+        get => _scenarioObservation;
+        private set => SetProperty(ref _scenarioObservation, value);
+    }
+
     public IReadOnlyList<PilotPollingTrendPoint> TrendPoints
     {
         get => _trendPoints;
@@ -233,9 +240,25 @@ public sealed class PilotPollingViewModel : ViewModelBase
         PlcCardTargetLabel = snapshot.PlcCardStatus.TargetLabel;
         PlcCardConnectionStatus = snapshot.PlcCardStatus.ConnectionStatus.ToString();
         PlcCardLastReadResultStatus = snapshot.PlcCardStatus.LastReadResultStatus ?? "-";
+        ScenarioObservation = CreateScenarioObservation(snapshot);
         TrendPoints = snapshot.TrendPoints;
         LogEntries = snapshot.LogEntries;
     }
+
+    private static string CreateScenarioObservation(PilotPollingSnapshot snapshot)
+    {
+        return snapshot.LastRequestKind switch
+        {
+            WorkRequestKind.WorkStart =>
+                $"{snapshot.LastRequestKind} {snapshot.Status} Start ACK: {FormatAck(snapshot.LastStartAckState)}",
+            WorkRequestKind.WorkComplete =>
+                $"{snapshot.LastRequestKind} {snapshot.Status} Complete ACK: {FormatAck(snapshot.LastCompleteAckState)}",
+            _ => $"{snapshot.LastRequestKind} {snapshot.Status}"
+        };
+    }
+
+    private static string FormatAck(bool? value) =>
+        value.HasValue ? value.Value.ToString() : "-";
 
     private void RaiseCommandStates()
     {
