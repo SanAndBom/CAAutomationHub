@@ -6,6 +6,7 @@ namespace CAAutomationHub.Wpf.ViewModels.Pilot;
 public sealed class PilotPollingViewModel : ViewModelBase
 {
     private readonly IPilotPollingService _pollingService;
+    private readonly SynchronizationContext? _synchronizationContext;
     private bool _isCommandRunning;
     private bool _isPolling;
     private string _lastRequestKind = WorkRequestKind.None.ToString();
@@ -24,6 +25,7 @@ public sealed class PilotPollingViewModel : ViewModelBase
     public PilotPollingViewModel(IPilotPollingService pollingService)
     {
         _pollingService = pollingService ?? throw new ArgumentNullException(nameof(pollingService));
+        _synchronizationContext = SynchronizationContext.Current;
         _pollingService.SnapshotChanged += OnSnapshotChanged;
 
         StartPollingCommand = new RelayCommand(_ => _ = RunCommandAsync(_pollingService.StartAsync), _ => !IsCommandRunning);
@@ -136,7 +138,7 @@ public sealed class PilotPollingViewModel : ViewModelBase
         IsCommandRunning = true;
         try
         {
-            await command(CancellationToken.None).ConfigureAwait(false);
+            await command(CancellationToken.None);
         }
         finally
         {
@@ -151,7 +153,7 @@ public sealed class PilotPollingViewModel : ViewModelBase
         IsCommandRunning = true;
         try
         {
-            var snapshot = await _pollingService.PollOnceAsync().ConfigureAwait(false);
+            var snapshot = await _pollingService.PollOnceAsync();
             ApplySnapshot(snapshot);
         }
         finally
@@ -161,7 +163,22 @@ public sealed class PilotPollingViewModel : ViewModelBase
     }
 
     private void OnSnapshotChanged(object? sender, PilotPollingSnapshotChangedEventArgs e) =>
-        ApplySnapshot(e.Snapshot);
+        RunOnCapturedContext(() => ApplySnapshot(e.Snapshot));
+
+    private void RunOnCapturedContext(Action action)
+    {
+        if (_synchronizationContext is null || SynchronizationContext.Current == _synchronizationContext)
+        {
+            action();
+            return;
+        }
+
+        _synchronizationContext.Post(static state =>
+        {
+            var callback = (Action)state!;
+            callback();
+        }, action);
+    }
 
     private void ApplySnapshot(PilotPollingSnapshot snapshot)
     {

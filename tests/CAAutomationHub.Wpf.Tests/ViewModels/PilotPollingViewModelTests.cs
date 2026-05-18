@@ -33,6 +33,46 @@ public sealed class PilotPollingViewModelTests
     }
 
     [Fact]
+    public void PollOnceCommand_ReenablesOnCapturedContextAfterPollingFailure()
+    {
+        using var context = new PumpingSynchronizationContext();
+        var previousContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            var service = new FailingPilotPollingService();
+            var viewModel = new PilotPollingViewModel(service);
+            var ownerThreadId = Environment.CurrentManagedThreadId;
+            var canExecuteChangedEvents = new List<(int ThreadId, bool CanExecute)>();
+            viewModel.PollOnceCommand.CanExecuteChanged += (_, _) =>
+                canExecuteChangedEvents.Add((
+                    Environment.CurrentManagedThreadId,
+                    viewModel.PollOnceCommand.CanExecute(null)));
+
+            viewModel.PollOnceCommand.Execute(null);
+            Assert.False(viewModel.PollOnceCommand.CanExecute(null));
+
+            context.PumpUntil(() => service.PollOnceCallCount == 1 && !viewModel.IsCommandRunning);
+
+            Assert.Equal(PilotPollingStatus.Failed.ToString(), viewModel.LastStatus);
+            Assert.Equal("DbException", viewModel.LastErrorCode);
+            Assert.False(viewModel.IsCommandRunning);
+            Assert.True(viewModel.PollOnceCommand.CanExecute(null));
+            Assert.Equal((ownerThreadId, true), canExecuteChangedEvents.Last());
+
+            viewModel.PollOnceCommand.Execute(null);
+            context.PumpUntil(() => service.PollOnceCallCount == 2 && !viewModel.IsCommandRunning);
+
+            Assert.Equal(2, service.PollOnceCallCount);
+            Assert.True(viewModel.PollOnceCommand.CanExecute(null));
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousContext);
+        }
+    }
+
+    [Fact]
     public void ViewModel_DoesNotReferenceForbiddenRuntimeOrDriverTypes()
     {
         var referencedAssemblyNames = typeof(PilotPollingViewModel)
@@ -118,6 +158,106 @@ public sealed class PilotPollingViewModelTests
             };
             SnapshotChanged?.Invoke(this, new PilotPollingSnapshotChangedEventArgs(CurrentSnapshot));
             return ValueTask.FromResult(CurrentSnapshot);
+        }
+    }
+
+    private sealed class FailingPilotPollingService : IPilotPollingService
+    {
+        public event EventHandler<PilotPollingSnapshotChangedEventArgs>? SnapshotChanged;
+
+        public int PollOnceCallCount { get; private set; }
+
+        public PilotPollingSnapshot CurrentSnapshot { get; private set; } =
+            PilotPollingSnapshot.Initial;
+
+        public ValueTask StartAsync(CancellationToken cancellationToken = default) =>
+            ValueTask.CompletedTask;
+
+        public ValueTask StopAsync(CancellationToken cancellationToken = default) =>
+            ValueTask.CompletedTask;
+
+        public async ValueTask<PilotPollingSnapshot> PollOnceAsync(CancellationToken cancellationToken = default)
+        {
+            PollOnceCallCount++;
+            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+            CurrentSnapshot = CurrentSnapshot with
+            {
+                LastRequestKind = WorkRequestKind.WorkStart,
+                LastSelectedLotId = "LOT-FAIL-01",
+                Status = PilotPollingStatus.Failed,
+                LastResultStatus = "Failed",
+                LastErrorCode = "DbException",
+                LastMessage = "SQL Server WorkStart query exception.",
+                LastUpdatedAt = DateTimeOffset.Parse("2026-05-18T10:05:00+09:00"),
+                LogEntries =
+                [
+                    new PilotPollingLogEntry(
+                        DateTimeOffset.Parse("2026-05-18T10:05:00+09:00"),
+                        WorkRequestKind.WorkStart,
+                        PilotPollingStatus.Failed.ToString(),
+                        "SQL Server WorkStart query exception.")
+                ]
+            };
+            SnapshotChanged?.Invoke(this, new PilotPollingSnapshotChangedEventArgs(CurrentSnapshot));
+            return CurrentSnapshot;
+        }
+    }
+
+    private sealed class PumpingSynchronizationContext : SynchronizationContext, IDisposable
+    {
+        private readonly Queue<(SendOrPostCallback Callback, object? State)> _callbacks = new();
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            lock (_callbacks)
+            {
+                _callbacks.Enqueue((d, state));
+            }
+        }
+
+        public void PumpUntil(Func<bool> condition)
+        {
+            var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+            while (!condition())
+            {
+                if (!PumpOne())
+                {
+                    Thread.Sleep(1);
+                }
+
+                if (DateTimeOffset.UtcNow > deadline)
+                {
+                    throw new TimeoutException("Timed out waiting for synchronization context callbacks.");
+                }
+            }
+
+            while (PumpOne())
+            {
+            }
+        }
+
+        public void Dispose()
+        {
+            while (PumpOne())
+            {
+            }
+        }
+
+        private bool PumpOne()
+        {
+            (SendOrPostCallback Callback, object? State) item;
+            lock (_callbacks)
+            {
+                if (_callbacks.Count == 0)
+                {
+                    return false;
+                }
+
+                item = _callbacks.Dequeue();
+            }
+
+            item.Callback(item.State);
+            return true;
         }
     }
 }
