@@ -8,6 +8,40 @@ namespace CAAutomationHub.PilotFlows.Xgt.Tests.WorkStart;
 public sealed class WorkStartXgtPlcOperationsTests
 {
     [Fact]
+    public void WorkStartXgtReadOptions_Default_UsesPilotBaseline()
+    {
+        var options = WorkStartXgtReadOptions.Default;
+
+        Assert.Equal("%DB10000", options.ReadStartVariable);
+        Assert.Equal(90, options.ReadWordCount);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void WorkStartXgtReadOptions_RejectsEmptyReadStartVariable(string readStartVariable)
+    {
+        Assert.Throws<ArgumentException>(
+            () => new WorkStartXgtReadOptions(readStartVariable, readWordCount: 90));
+    }
+
+    [Fact]
+    public void WorkStartXgtReadOptions_RejectsNullReadStartVariable()
+    {
+        Assert.Throws<ArgumentException>(
+            () => new WorkStartXgtReadOptions(null!, readWordCount: 90));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void WorkStartXgtReadOptions_RejectsNonPositiveReadWordCount(int readWordCount)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => new WorkStartXgtReadOptions("%DB10000", readWordCount));
+    }
+
+    [Fact]
     public async Task EnsureConnectedAsync_ConnectsDisconnectedSession()
     {
         var session = new FakeXgtSession
@@ -40,6 +74,26 @@ public sealed class WorkStartXgtPlcOperationsTests
         Assert.Equal(new byte[] { 1, 2, 3 }, result.Data);
         Assert.Null(result.Message);
         Assert.Same(DefaultReadRequest, session.LastReadRequest);
+    }
+
+    [Fact]
+    public async Task ReadWorkStartBlockAsync_UsesOptionsToBuildReadRequest()
+    {
+        var session = new FakeXgtSession
+        {
+            IsConnectedValue = true,
+            ReadResponse = AckWithData(1, 2, 3)
+        };
+        var options = new WorkStartXgtReadOptions("%DB12000", readWordCount: 7);
+        var operations = new WorkStartXgtPlcOperations(session, options);
+
+        await operations.ReadWorkStartBlockAsync();
+
+        var request = Assert.IsType<XgtReadRequest>(session.LastReadRequest);
+        Assert.Equal(XgtDataType.Continuous, request.DataType);
+        Assert.Equal((ushort)14, request.ContinuousByteLength);
+        var block = Assert.Single(request.VariableBlocks);
+        Assert.Equal("%DB12000", block.VariableName);
     }
 
     [Fact]

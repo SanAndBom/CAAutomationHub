@@ -9,6 +9,16 @@ public sealed class WorkStartXgtPlcOperations : IWorkStartPlcOperations
     private readonly IXgtSession _session;
     private readonly XgtReadRequest _readRequest;
 
+    public WorkStartXgtPlcOperations(IXgtSession session)
+        : this(session, WorkStartXgtReadOptions.Default)
+    {
+    }
+
+    public WorkStartXgtPlcOperations(IXgtSession session, WorkStartXgtReadOptions options)
+        : this(session, CreateReadRequest(options))
+    {
+    }
+
     public WorkStartXgtPlcOperations(IXgtSession session, XgtReadRequest readRequest)
     {
         _session = session ?? throw new ArgumentNullException(nameof(session));
@@ -65,4 +75,16 @@ public sealed class WorkStartXgtPlcOperations : IWorkStartPlcOperations
 
     private static NotSupportedException CreateReadSkeletonException() =>
         new("WorkStart XGT adapter is read-only in AH-PILOT-12. Write, ACK, and error writer paths are not implemented.");
+
+    private static XgtReadRequest CreateReadRequest(WorkStartXgtReadOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var continuousByteLength = checked((ushort)(options.ReadWordCount * 2));
+
+        return new XgtReadRequest(
+            XgtDataType.Continuous,
+            new[] { new XgtVariableBlock(options.ReadStartVariable) },
+            continuousByteLength);
+    }
 }
