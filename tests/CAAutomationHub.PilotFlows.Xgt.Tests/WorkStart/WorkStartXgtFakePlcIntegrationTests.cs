@@ -17,6 +17,49 @@ public sealed class WorkStartXgtFakePlcIntegrationTests
     private const int LotIdWordLength = WorkStartReadBlockLayout.DefaultLotIdWordLength;
 
     [Fact]
+    public async Task RunAsync_CompletesHappyPath_WithFakePlcAndFakeDb()
+    {
+        var runtime = CreateRuntime();
+        var expectedLotId = "S0007652610B";
+        var processData = CreateSampleProcessData(lotId: null);
+        var expectedPayload = WorkStartProcessDataPayloadBuilder
+            .Build(processData with { LotId = expectedLotId })
+            .PayloadBytes;
+        var query = new FakeWorkStartDataQuery(WorkStartDataQueryResult.Success(processData));
+        await using var fakePlc = InProcessFakePlcServer.Start(runtime);
+        await using var session = CreateSession(fakePlc.Port);
+        var operations = new WorkStartXgtPlcOperations(
+            session,
+            WorkStartXgtReadOptions.Default,
+            WorkStartXgtWriteOptions.Default);
+        var service = new WorkStartFlowService(
+            operations,
+            query,
+            new WorkStartFlowOptions
+            {
+                StartSignalWordIndex = FakePlcStartSignalWordIndex,
+                LotId1WordOffset = LotId1WordOffset,
+                LotId2WordOffset = LotId2WordOffset,
+                LotIdWordLength = LotIdWordLength
+            });
+
+        var result = await service.RunAsync();
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(WorkStartStep.Completed, result.Step);
+        Assert.Equal(WorkStartErrorCode.None, result.ErrorCode);
+        Assert.Equal(expectedLotId, result.SelectedLotId);
+        Assert.False(result.ErrorWriteExpected);
+        Assert.Equal(new[] { expectedLotId }, query.QueriedLotIds);
+        Assert.Equal(expectedPayload, runtime.LastBulkWrite);
+        Assert.Equal(expectedPayload, runtime.ReadContinuous(FakePlcMemoryImage.Db11000, expectedPayload.Length));
+        Assert.Equal((ushort)1, runtime.LastAckValue);
+        Assert.Equal(new byte[] { 0x01, 0x00 }, runtime.ReadContinuous(FakePlcMemoryImage.Db11416, 2));
+        Assert.Null(runtime.LastErrorCode);
+        Assert.Equal(new byte[] { 0x00, 0x00 }, runtime.ReadContinuous(FakePlcMemoryImage.Db11410, 2));
+    }
+
+    [Fact]
     public async Task ReadWorkStartBlockAsync_WithFakePlcMemoryMap_ReadsLotIdsAndStartSignalUsingTestSpecificLayout()
     {
         await using var fakePlc = InProcessFakePlcServer.Start(CreateRuntime());
@@ -142,6 +185,43 @@ public sealed class WorkStartXgtFakePlcIntegrationTests
         return new FakePlcRuntime(
             FakePlcScenarioInitializer.CreateMemoryImage(config),
             config.Rules);
+    }
+
+    private static WorkStartProcessData CreateSampleProcessData(string? lotId) =>
+        new()
+        {
+            LotId = lotId,
+            Profile = "PROFILE-ABC",
+            Tblr = "L",
+            WinType = "W",
+            CutSize = 500,
+            Lr = "R",
+            RollerYn = "Y",
+            RollerHolePos = 1234,
+            RollerHoleWidth = 5678,
+            RollerHoleLength = 9012,
+            RollerType = "S",
+            CutDegree = 90
+        };
+
+    private sealed class FakeWorkStartDataQuery : IWorkStartDataQuery
+    {
+        private readonly WorkStartDataQueryResult _result;
+
+        public FakeWorkStartDataQuery(WorkStartDataQueryResult result)
+        {
+            _result = result;
+        }
+
+        public List<string> QueriedLotIds { get; } = [];
+
+        public ValueTask<WorkStartDataQueryResult> QueryAsync(
+            string lotId,
+            CancellationToken cancellationToken = default)
+        {
+            QueriedLotIds.Add(lotId);
+            return ValueTask.FromResult(_result);
+        }
     }
 
     private sealed class InProcessFakePlcServer : IAsyncDisposable
