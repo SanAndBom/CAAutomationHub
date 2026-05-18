@@ -11,6 +11,7 @@ namespace CAAutomationHub.PilotFlows.Xgt.Tests.WorkStart;
 
 public sealed class WorkStartXgtFakePlcIntegrationTests
 {
+    private const string UnsupportedReadStartVariable = "%DB99990";
     private const int FakePlcStartSignalWordIndex = 83;
     private const int LotId1WordOffset = WorkStartReadBlockLayout.DefaultLotId1WordOffset;
     private const int LotId2WordOffset = WorkStartReadBlockLayout.DefaultLotId2WordOffset;
@@ -108,6 +109,57 @@ public sealed class WorkStartXgtFakePlcIntegrationTests
         Assert.Equal(new byte[] { 0x00, 0x00 }, runtime.ReadContinuous(FakePlcMemoryImage.Db11410, 2));
         Assert.Null(runtime.LastBulkWrite);
         Assert.Null(runtime.LastAckValue);
+    }
+
+    [Fact]
+    public async Task RunAsync_ReturnsReadFailed_WhenFakePlcRejectsWorkStartReadAddress()
+    {
+        var runtime = CreateRuntime();
+        var query = new FakeWorkStartDataQuery(
+            WorkStartDataQueryResult.Success(CreateSampleProcessData(lotId: null)));
+        await using var fakePlc = InProcessFakePlcServer.Start(runtime);
+        await using var session = CreateSession(fakePlc.Port);
+        var service = CreateService(
+            session,
+            query,
+            new WorkStartXgtReadOptions(
+                UnsupportedReadStartVariable,
+                WorkStartXgtReadOptions.DefaultReadWordCount));
+
+        var result = await service.RunAsync();
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(WorkStartStep.GroupRead, result.Step);
+        Assert.Equal(WorkStartErrorCode.ReadFailed, result.ErrorCode);
+        Assert.Equal(1101, (int)result.ErrorCode);
+        Assert.Null(result.SelectedLotId);
+        Assert.False(result.ErrorWriteExpected);
+        Assert.Empty(query.QueriedLotIds);
+        Assert.Null(runtime.LastBulkWrite);
+        Assert.Null(runtime.LastAckValue);
+        Assert.Null(runtime.LastErrorCode);
+        Assert.Equal(new byte[70 * 2], runtime.ReadContinuous(FakePlcMemoryImage.Db11000, 70 * 2));
+        Assert.Equal(new byte[] { 0x00, 0x00 }, runtime.ReadContinuous(FakePlcMemoryImage.Db11416, 2));
+        Assert.Equal(new byte[] { 0x00, 0x00 }, runtime.ReadContinuous(FakePlcMemoryImage.Db11410, 2));
+    }
+
+    [Fact]
+    public async Task ReadWorkStartBlockAsync_ReturnsOperationFailed_WhenFakePlcRejectsReadAddress()
+    {
+        await using var fakePlc = InProcessFakePlcServer.Start(CreateRuntime());
+        await using var session = CreateSession(fakePlc.Port);
+        var operations = new WorkStartXgtPlcOperations(
+            session,
+            new WorkStartXgtReadOptions(
+                UnsupportedReadStartVariable,
+                WorkStartXgtReadOptions.DefaultReadWordCount));
+
+        await operations.EnsureConnectedAsync();
+
+        var result = await operations.ReadWorkStartBlockAsync();
+
+        Assert.Equal(WorkStartReadBlockOperationStatus.OperationFailed, result.Status);
+        Assert.Null(result.Data);
     }
 
     [Fact]
@@ -225,11 +277,12 @@ public sealed class WorkStartXgtFakePlcIntegrationTests
 
     private static WorkStartFlowService CreateService(
         XgtSession session,
-        IWorkStartDataQuery query)
+        IWorkStartDataQuery query,
+        WorkStartXgtReadOptions? readOptions = null)
     {
         var operations = new WorkStartXgtPlcOperations(
             session,
-            WorkStartXgtReadOptions.Default,
+            readOptions ?? WorkStartXgtReadOptions.Default,
             WorkStartXgtWriteOptions.Default);
 
         return new WorkStartFlowService(
