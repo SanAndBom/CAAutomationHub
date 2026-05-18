@@ -19,5 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CAAutomationHub.PilotApp\CAAutomationHub.PilotApp.csproj" />
+    <ProjectReference Include="..\..\src\CAAutomationHub.PilotFlows.Xgt\CAAutomationHub.PilotFlows.Xgt.csproj" />
+    <ProjectReference Include="..\..\..\AutomationHub.XgtDriverCore\tools\AutomationHub.XgtDriverCore.FakePlc\AutomationHub.XgtDriverCore.FakePlc.csproj" />
   </ItemGroup>
 </Project>
