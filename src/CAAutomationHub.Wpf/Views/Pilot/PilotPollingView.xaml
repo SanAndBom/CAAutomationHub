@@ -8,6 +8,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0" Margin="0,0,0,12">
@@ -58,6 +59,43 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
+                <Border Grid.Column="0" Background="#142234" CornerRadius="4" Padding="10" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="PLC" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding PlcCardTargetId}" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Background="#142234" CornerRadius="4" Padding="10" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="Target" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding PlcCardTargetLabel}" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Background="#142234" CornerRadius="4" Padding="10" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="Connection" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding PlcCardConnectionStatus}" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="3" Background="#142234" CornerRadius="4" Padding="10">
+                    <StackPanel>
+                        <TextBlock Text="Last Read" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding PlcCardLastReadResultStatus}" Foreground="White" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="2" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
                 <Border Grid.Column="0" Background="#1A2638" CornerRadius="4" Padding="10" Margin="0,0,8,0">
                     <StackPanel>
                         <TextBlock Text="Running" Foreground="{StaticResource TextMutedBrush}"/>
@@ -87,7 +125,7 @@
                 </Border>
             </Grid>
 
-            <Grid Grid.Row="2" Margin="0,0,0,12">
+            <Grid Grid.Row="3" Margin="0,0,0,12">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -116,7 +154,7 @@
                 <TextBlock Grid.Row="2" Grid.Column="3" Text="{Binding LastErrorCode, TargetNullValue=-}" Foreground="White"/>
             </Grid>
 
-            <ItemsControl Grid.Row="3" ItemsSource="{Binding LogEntries}">
+            <ItemsControl Grid.Row="4" ItemsSource="{Binding LogEntries}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,4">

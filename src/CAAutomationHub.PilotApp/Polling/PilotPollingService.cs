@@ -21,7 +21,12 @@ public sealed class PilotPollingService : IPilotPollingService
         }
 
         _clock = clock ?? SystemWorkStartExecutionClock.Instance;
-        CurrentSnapshot = PilotPollingSnapshot.Initial;
+        CurrentSnapshot = PilotPollingSnapshot.Initial with
+        {
+            PlcCardStatus = PilotPlcCardStatus.CreateInitial(
+                _options.TargetId,
+                _options.TargetLabel ?? _options.TargetId)
+        };
     }
 
     public event EventHandler<PilotPollingSnapshotChangedEventArgs>? SnapshotChanged;
@@ -222,6 +227,17 @@ public sealed class PilotPollingService : IPilotPollingService
             LastErrorCode = errorCode,
             LastMessage = message,
             LastUpdatedAt = now,
+            PlcCardStatus = CreatePlcCardStatus(
+                previous.PlcCardStatus,
+                requestState,
+                status,
+                requestKind,
+                selectedLotId ?? requestState?.StartLotId ?? previous.LastSelectedLotId,
+                startAckState ?? previous.LastStartAckState,
+                completeAckState ?? previous.LastCompleteAckState,
+                resultStatus,
+                errorCode,
+                now),
             LogEntries = AppendLog(previous.LogEntries, now, requestKind, status, message)
         };
     }
@@ -234,8 +250,56 @@ public sealed class PilotPollingService : IPilotPollingService
             IsRunning = isRunning,
             Status = status,
             LastUpdatedAt = now,
+            PlcCardStatus = CurrentSnapshot.PlcCardStatus with
+            {
+                PollingStatus = status.ToString(),
+                LastUpdatedAt = now
+            },
             LogEntries = AppendLog(CurrentSnapshot.LogEntries, now, WorkRequestKind.None, status, message)
         });
+    }
+
+    private static PilotPlcCardStatus CreatePlcCardStatus(
+        PilotPlcCardStatus previous,
+        PilotPollingRequestState? requestState,
+        PilotPollingStatus pollingStatus,
+        WorkRequestKind requestKind,
+        string? selectedLotId,
+        bool? startAckState,
+        bool? completeAckState,
+        string? resultStatus,
+        string? errorCode,
+        DateTimeOffset updatedAt)
+    {
+        var readSucceeded = requestState?.ReadSucceeded;
+        var connectionStatus = readSucceeded switch
+        {
+            false => PilotPlcConnectionStatus.Failed,
+            true => PilotPlcConnectionStatus.Connected,
+            _ => previous.ConnectionStatus
+        };
+        var readResultStatus = readSucceeded switch
+        {
+            false => "ReadFailed",
+            true => "Succeeded",
+            _ => previous.LastReadResultStatus
+        };
+
+        return previous with
+        {
+            ConnectionStatus = connectionStatus,
+            PollingStatus = pollingStatus.ToString(),
+            LastReadResultStatus = readResultStatus,
+            LastRequestKind = requestKind,
+            SelectedLotId = selectedLotId,
+            StartRequestActive = requestState?.StartRequestActive ?? previous.StartRequestActive,
+            CompleteRequestActive = requestState?.CompleteRequestActive ?? previous.CompleteRequestActive,
+            StartAckState = startAckState,
+            CompleteAckState = completeAckState,
+            LastResultStatus = resultStatus,
+            LastErrorCode = errorCode,
+            LastUpdatedAt = updatedAt
+        };
     }
 
     private IReadOnlyList<PilotPollingLogEntry> AppendLog(

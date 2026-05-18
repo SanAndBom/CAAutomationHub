@@ -38,7 +38,11 @@ public static class PilotLocalComposition
     {
         var service = new PilotPollingService(
             new FakePilotPollingFlowPort(configuration.Plc.TargetId),
-            new PilotPollingOptions { TargetId = configuration.Plc.TargetId });
+            new PilotPollingOptions
+            {
+                TargetId = configuration.Plc.TargetId,
+                TargetLabel = CreateTargetLabel(configuration)
+            });
 
         return new PilotPollingComposition(
             service,
@@ -104,7 +108,11 @@ public static class PilotLocalComposition
 
         var service = new PilotPollingService(
             port,
-            new PilotPollingOptions { TargetId = configuration.Plc.TargetId });
+            new PilotPollingOptions
+            {
+                TargetId = configuration.Plc.TargetId,
+                TargetLabel = CreateTargetLabel(configuration)
+            });
 
         return new PilotPollingComposition(
             service,
@@ -152,6 +160,9 @@ public static class PilotLocalComposition
         host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
         || host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase)
         || host.Equals("::1", StringComparison.OrdinalIgnoreCase);
+
+    private static string CreateTargetLabel(PilotLocalConfiguration configuration) =>
+        $"{configuration.Plc.Host}:{configuration.Plc.Port}";
 
     private sealed class FakePilotPollingFlowPort : IPilotPollingFlowPort
     {

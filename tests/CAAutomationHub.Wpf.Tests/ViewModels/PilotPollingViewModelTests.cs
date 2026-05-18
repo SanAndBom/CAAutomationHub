@@ -30,6 +30,10 @@ public sealed class PilotPollingViewModelTests
         Assert.Equal("None", viewModel.LastErrorCode);
         Assert.Equal("WorkStart processed.", viewModel.LastMessage);
         Assert.Single(viewModel.LogEntries);
+        Assert.Equal("fakeplc-local", viewModel.PlcCardTargetId);
+        Assert.Equal("localhost:2004", viewModel.PlcCardTargetLabel);
+        Assert.Equal("Connected", viewModel.PlcCardConnectionStatus);
+        Assert.Equal("Succeeded", viewModel.PlcCardLastReadResultStatus);
     }
 
     [Fact]
@@ -117,7 +121,10 @@ public sealed class PilotPollingViewModelTests
         public int PollOnceCallCount { get; private set; }
 
         public PilotPollingSnapshot CurrentSnapshot { get; private set; } =
-            PilotPollingSnapshot.Initial;
+            PilotPollingSnapshot.Initial with
+            {
+                PlcCardStatus = PilotPlcCardStatus.CreateInitial("fakeplc-local", "localhost:2004")
+            };
 
         public ValueTask StartAsync(CancellationToken cancellationToken = default)
         {
@@ -147,6 +154,21 @@ public sealed class PilotPollingViewModelTests
                 LastErrorCode = "None",
                 LastMessage = "WorkStart processed.",
                 LastUpdatedAt = DateTimeOffset.Parse("2026-05-18T10:00:00+09:00"),
+                PlcCardStatus = CurrentSnapshot.PlcCardStatus with
+                {
+                    ConnectionStatus = PilotPlcConnectionStatus.Connected,
+                    PollingStatus = PilotPollingStatus.WorkStartProcessed.ToString(),
+                    LastReadResultStatus = "Succeeded",
+                    LastRequestKind = WorkRequestKind.WorkStart,
+                    SelectedLotId = "LOT-START-01",
+                    StartRequestActive = true,
+                    CompleteRequestActive = false,
+                    StartAckState = true,
+                    CompleteAckState = null,
+                    LastResultStatus = "Succeeded",
+                    LastErrorCode = "None",
+                    LastUpdatedAt = DateTimeOffset.Parse("2026-05-18T10:00:00+09:00")
+                },
                 LogEntries =
                 [
                     new PilotPollingLogEntry(
@@ -168,7 +190,10 @@ public sealed class PilotPollingViewModelTests
         public int PollOnceCallCount { get; private set; }
 
         public PilotPollingSnapshot CurrentSnapshot { get; private set; } =
-            PilotPollingSnapshot.Initial;
+            PilotPollingSnapshot.Initial with
+            {
+                PlcCardStatus = PilotPlcCardStatus.CreateInitial("fakeplc-local", "localhost:2004")
+            };
 
         public ValueTask StartAsync(CancellationToken cancellationToken = default) =>
             ValueTask.CompletedTask;
@@ -189,6 +214,17 @@ public sealed class PilotPollingViewModelTests
                 LastErrorCode = "DbException",
                 LastMessage = "SQL Server WorkStart query exception.",
                 LastUpdatedAt = DateTimeOffset.Parse("2026-05-18T10:05:00+09:00"),
+                PlcCardStatus = CurrentSnapshot.PlcCardStatus with
+                {
+                    ConnectionStatus = PilotPlcConnectionStatus.Connected,
+                    PollingStatus = PilotPollingStatus.Failed.ToString(),
+                    LastReadResultStatus = "Succeeded",
+                    LastRequestKind = WorkRequestKind.WorkStart,
+                    SelectedLotId = "LOT-FAIL-01",
+                    LastResultStatus = "Failed",
+                    LastErrorCode = "DbException",
+                    LastUpdatedAt = DateTimeOffset.Parse("2026-05-18T10:05:00+09:00")
+                },
                 LogEntries =
                 [
                     new PilotPollingLogEntry(

@@ -27,6 +27,29 @@ public sealed class PilotPollingViewBindingTests
     }
 
     [Fact]
+    public void PilotPlcCard_BindsToPilotCardDisplayProperties()
+    {
+        var document = XDocument.Load(FindRepositoryFile(
+            "src",
+            "CAAutomationHub.Wpf",
+            "Views",
+            "Pilot",
+            "PilotPollingView.xaml"));
+
+        var textValues = document
+            .Descendants()
+            .Select(element => (string?)element.Attribute("Text"))
+            .Where(text => text is not null)
+            .Cast<string>()
+            .ToArray();
+
+        Assert.Contains("{Binding PlcCardTargetId}", textValues);
+        Assert.Contains("{Binding PlcCardTargetLabel}", textValues);
+        Assert.Contains("{Binding PlcCardConnectionStatus}", textValues);
+        Assert.Contains("{Binding PlcCardLastReadResultStatus}", textValues);
+    }
+
+    [Fact]
     public void MainWindow_ContainsPilotPollingViewBoundToPilotPollingViewModel()
     {
         var document = XDocument.Load(FindRepositoryFile(

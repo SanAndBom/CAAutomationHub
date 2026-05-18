@@ -57,6 +57,9 @@ public sealed class PilotPollingServiceTests
         Assert.Equal(PilotPollingStatus.WorkStartProcessed, snapshot.Status);
         Assert.Equal("Succeeded", snapshot.LastResultStatus);
         Assert.Equal("None", snapshot.LastErrorCode);
+        Assert.Equal("PLC-01", snapshot.PlcCardStatus.TargetId);
+        Assert.Equal(PilotPlcConnectionStatus.Connected, snapshot.PlcCardStatus.ConnectionStatus);
+        Assert.Equal("Succeeded", snapshot.PlcCardStatus.LastReadResultStatus);
     }
 
     [Fact]
@@ -71,6 +74,8 @@ public sealed class PilotPollingServiceTests
         Assert.Equal("ReadFailed", snapshot.LastResultStatus);
         Assert.Equal("ReadFailed", snapshot.LastErrorCode);
         Assert.Contains("connect failed", snapshot.LastMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(PilotPlcConnectionStatus.Failed, snapshot.PlcCardStatus.ConnectionStatus);
+        Assert.Equal("ReadFailed", snapshot.PlcCardStatus.LastReadResultStatus);
     }
 
     [Fact]

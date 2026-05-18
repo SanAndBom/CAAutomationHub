@@ -4,5 +4,7 @@ public sealed record PilotPollingOptions
 {
     public required string TargetId { get; init; }
 
+    public string? TargetLabel { get; init; }
+
     public int MaxLogEntries { get; init; } = 100;
 }

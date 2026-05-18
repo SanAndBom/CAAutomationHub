@@ -20,6 +20,10 @@ public sealed class PilotPollingViewModel : ViewModelBase
     private string? _lastErrorCode;
     private string? _lastMessage;
     private DateTimeOffset? _lastUpdatedAt;
+    private string _plcCardTargetId = "-";
+    private string _plcCardTargetLabel = "-";
+    private string _plcCardConnectionStatus = PilotPlcConnectionStatus.Unknown.ToString();
+    private string _plcCardLastReadResultStatus = "-";
     private IReadOnlyList<PilotPollingLogEntry> _logEntries = [];
 
     public PilotPollingViewModel(IPilotPollingService pollingService)
@@ -125,6 +129,30 @@ public sealed class PilotPollingViewModel : ViewModelBase
         private set => SetProperty(ref _lastUpdatedAt, value);
     }
 
+    public string PlcCardTargetId
+    {
+        get => _plcCardTargetId;
+        private set => SetProperty(ref _plcCardTargetId, value);
+    }
+
+    public string PlcCardTargetLabel
+    {
+        get => _plcCardTargetLabel;
+        private set => SetProperty(ref _plcCardTargetLabel, value);
+    }
+
+    public string PlcCardConnectionStatus
+    {
+        get => _plcCardConnectionStatus;
+        private set => SetProperty(ref _plcCardConnectionStatus, value);
+    }
+
+    public string PlcCardLastReadResultStatus
+    {
+        get => _plcCardLastReadResultStatus;
+        private set => SetProperty(ref _plcCardLastReadResultStatus, value);
+    }
+
     public IReadOnlyList<PilotPollingLogEntry> LogEntries
     {
         get => _logEntries;
@@ -194,6 +222,10 @@ public sealed class PilotPollingViewModel : ViewModelBase
         LastErrorCode = snapshot.LastErrorCode;
         LastMessage = snapshot.LastMessage;
         LastUpdatedAt = snapshot.LastUpdatedAt;
+        PlcCardTargetId = snapshot.PlcCardStatus.TargetId;
+        PlcCardTargetLabel = snapshot.PlcCardStatus.TargetLabel;
+        PlcCardConnectionStatus = snapshot.PlcCardStatus.ConnectionStatus.ToString();
+        PlcCardLastReadResultStatus = snapshot.PlcCardStatus.LastReadResultStatus ?? "-";
         LogEntries = snapshot.LogEntries;
     }
 

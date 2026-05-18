@@ -7,6 +7,7 @@ public sealed record PilotPollingSnapshot
         IsRunning = false,
         Status = PilotPollingStatus.Stopped,
         LastRequestKind = WorkRequestKind.None,
+        PlcCardStatus = PilotPlcCardStatus.Unknown,
         LastUpdatedAt = null,
         LogEntries = []
     };
@@ -16,6 +17,8 @@ public sealed record PilotPollingSnapshot
     public required PilotPollingStatus Status { get; init; }
 
     public required WorkRequestKind LastRequestKind { get; init; }
+
+    public required PilotPlcCardStatus PlcCardStatus { get; init; }
 
     public string? LastSelectedLotId { get; init; }
 
